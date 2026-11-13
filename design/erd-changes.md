@@ -1,0 +1,123 @@
+# ERD 변경 목록
+
+관련 정책: [여행](../policy/trip.md), [지출](../policy/expense.md), [환율](../policy/exchange-rate.md), [정산](../policy/settlement.md)
+
+## 반영할 변경
+
+| 대상 | 기존 검토 DDL | 변경 방향 | 확정 범위 |
+| --- | --- | --- | --- |
+| `trip_member.guest_name` | `UNIQUE (trip_id, guest_name)` | 기존 제약 유지, 제거안 철회 | PM 답변에 따라 같은 여행의 비회원 이름 중복 금지. 등록 및 수정 모두 적용한다. |
+| `settlement.created_at` | `TIMESTAMPTZ NOT NULL`, 준비 생성 시 기록 | NULL 허용, 준비 시 비워두고 정산 확정 시 기록 | 회의 결정. `issued_at` 추가안은 기각됐다. |
+| `settlement.deleted_at` | 컬럼 없음 | `TIMESTAMPTZ NULL` 추가, 만료 또는 정상 이탈한 준비 정산을 논리 삭제 | 후속 설계에서 정리한 방향. 지출 점유 해제와 같은 트랜잭션에서 기록한다. |
+| 잠금 식별값 | 소유자와 만료 시각만 존재 | 잠금 작업별 토큰 저장 및 요청 전달 | 토큰 도입은 회의 결정. 테이블별 배치, 이름과 타입은 제안이다. |
+| 환율 출처 | `expense.exchange_rate_source`의 `AUTO/MANUAL`만 존재 | 여러 환율 출처를 구분할 정보 추가 | 출처 속성 추가는 회의 결정. 구체적인 저장 후보는 아래 구현 제안에서 다룬다. |
+| 지출 저장 고유키 | 없음 | 중복 저장을 방지할 키 보관 구조 추가 | 앱 고유키 사용은 회의 결정. 저장 후보와 제약 범위는 멱등성 설계를 따른다. |
+
+## 추가 컬럼 후보
+
+> 구현 제안
+>
+> 아래 표는 추가 컬럼 후보와 타입 선택안이다. 실제 migration과 구분한다.
+
+| 테이블 후보 | 컬럼 후보 | 타입 후보 | 값과 NULL 의미 | 관련 설계 |
+| --- | --- | --- | --- | --- |
+| `expense` | `edit_lock_token` | `UUID` 또는 문자열, NULL 허용 | 수정 작업 식별값. 잠금 해제 시 소유자와 만료 시각도 함께 정리한다. | [수정 잠금](locking.md) |
+| `settlement` | `preparation_lock_token` | `UUID` 또는 문자열 | 준비 작업 식별값 | [준비 잠금](locking.md) |
+| `settlement` | `preparation_lock_owner_trip_member_id` | `BIGINT` | 준비 잠금 소유자 후보 | [준비 잠금](locking.md) |
+| `settlement` | `deleted_at` | `TIMESTAMPTZ NULL` | NULL이면 미삭제, 값이 있으면 폐기한 준비 정산. 활성 조회와 연장 및 발행에서 제외 | [만료 정리](locking.md#만료된-정산-준비-정리) |
+| `expense` | `exchange_rate_provider` | 코드 문자열 또는 enum | API 기관 등 출처 구분 후보 | [환율 보존](expense-calculation.md#저장-데이터) |
+| `expense` | `exchange_rate_base_date` | `DATE` | 환율의 실제 기준일 보존 후보 | [환율 보존](expense-calculation.md#저장-데이터) |
+| `expense` 또는 요청 기록 | `idempotency_key` | `UUID` 또는 문자열 | 앱 저장 요청의 고유키 | [멱등성](idempotency.md) |
+| `expense` 또는 요청 기록 | `request_hash` | 문자열 또는 바이트 타입 | 같은 키의 입력 내용 비교 후보 | [멱등성](idempotency.md) |
+
+기존 `exchange_rate_source`는 API 자동값인지 수동 입력값인지 구분한다. 기관명과 기준일은 이 값과 구분한다.
+
+> 논의 필요
+>
+> API 기관은 코드 문자열 vs enum, 수동 입력 시 기관 정보 유지 vs 비움
+>
+> 기준일 컬럼의 필수 조건, 토큰의 타입 및 NULL 조건, 준비 소유권 컬럼 추가 여부는 각 설계의 선택안을 따른다.
+
+### 예시: AUTO만 저장하면 나중에 알 수 없는 것
+
+어떤 달러 지출이 기관 A의 기준일 환율을 사용했다고 가정한다. `exchange_rate_source = AUTO`만 있으면 ‘자동으로 가져왔다’는 사실은 알 수 있지만 어느 기관의 어느 날짜 환율인지 이 값만으로 알 수 없다.
+
+출처와 기준일 컬럼 후보는 그 정보를 보존하기 위한 것이다. 기관 A와 B를 나중에 함께 사용해도 지출 당시 적용한 기준을 설명할 수 있게 한다. 수동 입력의 기관 정보 처리 선택은 위 논의 사항을 따른다.
+
+결제와 환전 날짜는 사용자가 입력한 현지 날짜를 저장하므로 기존 `expense.paid_date DATE`와 `manual_exchange_rate.exchange_date DATE`를 유지한다. 시각과 시간대 컬럼은 추가하지 않는다.
+
+## 기존 구조에서 유지할 관계
+
+| 대상 | 역할 및 주의점 |
+| --- | --- |
+| `expense.settlement_id` | 현재 점유 정산이다. `DRAFT`도 포함하며 과거 포함 이력과 구분한다. |
+| `settlement_expense` | 발행 시 포함 지출 연결이다. `(settlement_id, expense_id)` 복합 PK를 유지하고 `expense_id` 단독 UNIQUE를 두지 않는 기존 검토안이다. |
+| `expense_share_amount` | `(expense_id, trip_member_id)`별 최종 부담액이다. |
+| `expense_item_member` | `(expense_item_id, trip_member_id)`로 품목별 부담자 중복을 막는다. |
+| `transfer` | 송금인과 수령인은 `trip_member.id`를 참조한다. 금액 0원 행은 저장하지 않는다. |
+
+기존 연결 구조는 지출 ID를 보존하며 금액 스냅샷은 포함하지 않는다. 취소 후 지출이 수정되면 단순 FK로는 당시 산출 근거를 복원할 수 없다.
+
+> 논의 필요
+>
+> 취소 정산의 송금 및 포함 지출 이력 보존 범위는 PM 논의 중이다. 보존 범위 결정 후 금액 스냅샷 필요 여부를 정한다.
+
+### 예시: 같은 지출을 취소 후 다시 정산하는 경우
+
+지출 101이 정산 900에 포함됐다가 수령 확인 전에 취소됐고, 이후 정산 901에 다시 포함된다고 가정한다.
+
+현재 점유는 `expense.settlement_id`를 NULL로 해제했다가 새 준비 시 901로 바꾸면 된다. 과거 포함 연결을 보존하는 안에서는 다음 두 행이 함께 존재할 수 있어야 한다.
+
+| `settlement_id` | `expense_id` | 의미 |
+| --- | --- | --- |
+| 900 | 101 | 취소한 정산에 포함됐던 지출 |
+| 901 | 101 | 새 정산에 포함한 지출 |
+
+이 때문에 복합 PK는 유지하되 `expense_id`만의 UNIQUE는 두지 않는다. 다만 101의 금액이 재정산 전에 12,000원에서 15,000원으로 바뀌면, 두 연결 모두 같은 현재 지출을 가리킨다. 연결만 보존해서는 ‘정산 900 당시에는 12,000원이었다’를 복원할 수 없다. 스냅샷 선택은 위 논의 사항을 따른다.
+
+### 예시: 비회원 이름이 이미 등록된 경우
+
+같은 여행의 `trip_member` 21에 `guest_name = 민수`가 있다면, 22에 민수를 다시 등록하는 요청은 거절한다. 다른 비회원 이름을 민수로 수정하려는 요청도 같은 제약을 적용한다. 두 요청이 동시에 들어와도 기존 `(trip_id, guest_name)` UNIQUE로 같은 이름이 둘 다 저장되지 않게 한다.
+
+참여자 연결은 계속 `trip_member.id`를 사용한다.
+
+> 논의 필요
+>
+> 회원 닉네임과 비회원 이름의 교차 중복 제한 여부. 기존 복합 UNIQUE만으로는 회원 닉네임과 비교하지 않는다.
+
+## 정산 시각과 BaseEntity
+
+[BaseEntity](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/persistence/BaseEntity.kt)는 `@CreatedDate`로 최초 저장 시 `created_at`을 기록하고, 매핑에서 `updatable = false`로 지정한다. 정산 시각 결정과 그대로 호환되지 않는다. 코드 확인 기준은 백엔드 커밋 `09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c`이며, DB 적용이나 배포 동작을 검증한 것은 아니다.
+
+| 충돌 | 구현 시 확인할 내용 |
+| --- | --- |
+| DRAFT 최초 저장 시 자동 시각 기록 | 정산 `created_at`은 발행 전 NULL이어야 한다. 공통 Auditing이 값을 채우지 않아야 한다. |
+| `updatable = false` | 확정 시 NULL에서 발행 시각으로 바꿀 수 있어야 한다. |
+| 공통 필드 상속 | 정산만 별도 매핑할지 등 적용 방식을 합의해야 한다. 다른 Entity의 생성 시각 정책까지 변경하지 않는다. |
+
+PM 답변은 발행 시각이 확정 시각임을 확인했다. 저장 컬럼은 기존 개발 결정대로 nullable `created_at`을 사용한다.
+
+> 논의 필요
+>
+> BaseEntity 상속 제외 vs 정산 전용 Auditing 및 매핑 구성
+>
+> 준비 시작 시각 별도 보존 여부. 기존에 기각한 issued_at 추가와 구분한다.
+
+정산의 논리 삭제에 `deleted_at`이 필요하더라도 BaseEntity 전체 상속을 자동으로 결정하지 않는다. 공통 생성 시각과 발행 시각의 충돌을 먼저 해소하고, 논리 삭제 필드는 정산 매핑에 명시적으로 반영한다. 조회와 조건부 갱신에서도 `deleted_at IS NULL`을 직접 검사한다.
+
+## 추가 결정이 필요한 스키마
+
+> 논의 필요
+>
+> | 안건 | 기존 상태와 결정할 내용 |
+> | --- | --- |
+> | 정산 방식 미선택 | `settlement_method NOT NULL`과 방식 선택 전 `DRAFT` 생성이 충돌한다. nullable 변경 또는 생성 순서 조정 필요 |
+> | 최근 저장 환율 | 같은 결제 통화와 created_at 내림차순은 확정. 환전 수단 필터와 동률 정렬 기준, 인덱스 선택 |
+> | 금액 타입과 단위 | 원본 통화 최소 단위와 원화 소수 보존, 합계 검증을 먼저 정한 뒤 `BIGINT` 유지 여부 결정 |
+> | 지출명 | 입력 길이 제한 없는 정책과 `VARCHAR(50)` 간 차이 해소 |
+> | 동일 여행 제약 | 단일 FK 외 서비스 검증 또는 복합 FK 적용 방식 |
+> | 취소 이력과 개인정보 | 보존 범위가 정해진 뒤 스냅샷, 삭제와 익명화 구조 검토 |
+> | 폐기한 준비 정산 | 논리 삭제한 DRAFT의 보존 기간과 최종 물리 삭제 여부. 발행된 정산 취소 이력과 구분 |
+> | 인덱스 | 만료 DRAFT 조회와 멱등성 키 범위를 확정한 뒤 필요한 인덱스 설계. 이름만 먼저 확정하지 않는다. |
+
+실제 반영 시에는 기존 데이터, NULL과 상태 조합, 제약 제거 및 추가 영향과 마이그레이션 후 매핑을 검증한다. 검토 DDL의 변경 제안과 실제 마이그레이션 적용 결과는 구분한다.
