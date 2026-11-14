@@ -46,6 +46,21 @@
 
 결제와 환전 날짜는 사용자가 입력한 현지 날짜를 저장하므로 기존 `expense.paid_date DATE`와 `manual_exchange_rate.exchange_date DATE`를 유지한다. 시각과 시간대 컬럼은 추가하지 않는다.
 
+## 인증 테이블과 컬럼
+
+인증 구현에서 기존 ERD에 없는 테이블, 컬럼과 제약을 추가했다. 아래 변경은 구현 브랜치의 마이그레이션이며 아직 `develop`에 반영되지 않았다. 설계 근거는 [인증 세션과 토큰](authentication.md)을 따른다.
+
+| 대상 | 변경 | 용도 |
+| --- | --- | --- |
+| `auth_session` | 테이블 추가 | 로그인 세션과 현재, 직전 Refresh Token의 해시를 저장한다. 컬럼은 [로그인 세션 저장](authentication.md#로그인-세션-저장)을 따른다. |
+| `apple_refresh_token` | 테이블 추가, `member_id` UNIQUE | Apple 연결 해제에 사용할 Apple Refresh Token을 회원당 한 행으로 암호화해 저장한다. |
+| `member.social_display_name` | `VARCHAR(100) NULL` 추가 | 소셜 제공자가 준 표시 이름을 가입 화면의 닉네임 초기값으로 사용한다. NULL이면 제공자가 이름을 주지 않았다. |
+| `member` | `UNIQUE (social_provider, social_provider_user_id)` 추가 | 같은 소셜 계정으로 회원이 두 번 생기지 않게 한다. 탈퇴 처리로 `social_provider_user_id`가 NULL인 행끼리는 중복을 허용한다. |
+
+> 논의 필요
+>
+> Apple 토큰과 표시 이름을 Apple 전용 테이블로 합칠지 정한다. 선택지는 [Apple 연결 해제 토큰](authentication.md#apple-연결-해제-토큰)을 따른다.
+
 ## 기존 구조에서 유지할 관계
 
 | 대상 | 역할 및 주의점 |
