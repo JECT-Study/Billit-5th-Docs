@@ -56,7 +56,7 @@
 
 ## 구현 상태
 
-가입 전용 토큰의 발급과 검증, 가입 API는 구현 브랜치에 있으며 아직 `develop`에 반영되지 않았다. 구현 PR이 올라오면 [인증 세션과 토큰](authentication.md#설계-결정)과 함께 연결한다.
+가입 전용 토큰의 발급과 검증은 [Billit-5th-Server PR #30](https://github.com/JECT-Study/Billit-5th-Server/pull/30), 가입 API는 [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34)에서 리뷰 중이며 아직 `develop`에 반영되지 않았다. 전체 PR 순서는 [인증 세션과 토큰](authentication.md#설계-결정)을 따른다.
 
 ## 구현 시 검증
 

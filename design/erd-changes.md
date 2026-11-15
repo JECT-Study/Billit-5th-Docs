@@ -48,7 +48,7 @@
 
 ## 인증 테이블과 컬럼
 
-인증 구현에서 기존 ERD에 없는 테이블, 컬럼과 제약을 추가했다. 아래 변경은 구현 브랜치의 마이그레이션이며 아직 `develop`에 반영되지 않았다. 설계 근거는 [인증 세션과 토큰](authentication.md)을 따른다.
+인증 구현에서 기존 ERD에 없는 테이블, 컬럼과 제약을 추가했다. 아래 변경은 구현 PR의 마이그레이션이며 아직 `develop`에 반영되지 않았다. `auth_session`은 [PR #30](https://github.com/JECT-Study/Billit-5th-Server/pull/30), 소셜 계정 UNIQUE는 [PR #31](https://github.com/JECT-Study/Billit-5th-Server/pull/31), `apple_refresh_token`과 `social_display_name`은 [PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33)에 있다. 설계 근거는 [인증 세션과 토큰](authentication.md)을 따른다.
 
 | 대상 | 변경 | 용도 |
 | --- | --- | --- |
