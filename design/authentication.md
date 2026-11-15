@@ -10,7 +10,15 @@
 
 이 설계는 2026-11-14 회의에서 검토했다. 회의에서 결론이 나지 않은 항목은 해당 절에 `논의 필요`로 남긴다.
 
-구현은 아직 `develop`에 반영되지 않았다. 구현 PR이 올라오면 이 절에 연결한다.
+구현은 아래 PR에서 리뷰 중이며 아직 `develop`에 반영되지 않았다. 앞 PR이 병합된 뒤 다음 PR을 병합한다.
+
+| 순서 | 범위 | PR |
+| --- | --- | --- |
+| 1 | 토큰 발급과 검증, 요청 인증, `auth_session` | [Billit-5th-Server PR #30](https://github.com/JECT-Study/Billit-5th-Server/pull/30) |
+| 2 | Google, Kakao 소셜 로그인 | [Billit-5th-Server PR #31](https://github.com/JECT-Study/Billit-5th-Server/pull/31) |
+| 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) |
+| 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) |
+| 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) |
 
 ## 토큰 종류와 검증
 
