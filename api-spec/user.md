@@ -6,7 +6,6 @@
 - [API 목록](#api-목록)
 - [가입 API](#가입-api)
   - [USER-01 가입 정보 조회](#user-01-가입-정보-조회)
-  - [USER-02 닉네임 중복 확인](#user-02-닉네임-중복-확인)
   - [USER-03 가입 완료](#user-03-가입-완료)
 - [프로필 API](#프로필-api)
   - [USER-04 내 프로필 조회](#user-04-내-프로필-조회)
@@ -18,7 +17,7 @@
 
 ## 문서 범위
 
-가입 후 닉네임 변경은 MVP에서 제공하지 않는다. 프로필 이미지 처리 방식과 약관 버전 기록은 기존 ERD만으로 확정하지 않는다.
+계정 닉네임은 다른 회원과 겹쳐도 되며 가입 후 변경할 수 있다([유저 정책](../policy/user.md#닉네임)). 그래서 닉네임 중복 확인 API(기존 USER-02)는 두지 않는다. 계정 닉네임 변경 API는 아직 정의하지 않았다. 프로필 이미지 처리 방식은 기존 ERD만으로 확정하지 않는다.
 
 [목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
 
@@ -29,7 +28,6 @@
 | 기능 | Method | Path | 인증 |
 | --- | --- | --- | --- |
 | [가입 정보 조회](#user-01-가입-정보-조회) | `GET` | `/api/v1/me/registration` | 소셜 로그인 완료, 가입 미완료 |
-| [닉네임 중복 확인](#user-02-닉네임-중복-확인) | `GET` | `/api/v1/nickname-availability` | 가입 전용 토큰 필요, 가입 미완료 |
 | [가입 완료](#user-03-가입-완료) | `POST` | `/api/v1/me/registration` | 소셜 로그인 완료, 가입 미완료 |
 | [내 프로필 조회](#user-04-내-프로필-조회) | `GET` | `/api/v1/me` | 로그인 필요 |
 | [프로필 이미지 변경](#user-05-프로필-이미지-변경) | `PUT` | `/api/v1/me/profile-image` | 로그인 필요 |
@@ -48,7 +46,7 @@
 
 #### 설명
 
-소셜에서 제공한 정보와 가입 시 동의할 약관 목록을 조회한다.
+가입 시 동의할 약관 목록을 조회한다.
 
 #### 요청
 
@@ -63,9 +61,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
 | `status` | String | 아니요 | 항상 | 가입 미완료 상태인 `SIGNING_UP`을 반환한다. |
-| `socialDisplayName` | String | 예 | 항상 | 가입 화면의 닉네임 입력란 초기값. 제공값이 없으면 `null`. |
-| `name` | String | 예 | 항상 | 소셜 제공값이 없으면 null. |
-| `age` | Integer | 예 | 항상 | 소셜 제공값이 없으면 null. 직접 입력의 필수 여부는 논의 필요. |
+| `socialDisplayName` | String | 예 | 항상 | 소셜 제공자가 준 표시 이름. 제공값이 없으면 `null`. 닉네임 초기값으로 쓰지 않는다(아래 논의 필요). |
 | `terms` | Array&lt;RegistrationTerms&gt; | 아니요 | 항상 | 가입 화면에서 표시할 필수 및 선택 약관 목록. |
 
 **RegistrationTerms**
@@ -82,11 +78,9 @@ HTTP `200 OK`를 반환한다.
   "data": {
     "status": "SIGNING_UP",
     "socialDisplayName": "김빌릿",
-    "name": null,
-    "age": null,
     "terms": [
       {
-        "termsId": "example-privacy-terms-id",
+        "termsId": "1",
         "title": "개인정보 수집 및 이용 동의",
         "isRequired": true,
         "contentUrl": "https://example.com/terms/privacy/v1"
@@ -107,72 +101,13 @@ HTTP `200 OK`를 반환한다.
 
 #### 처리 규칙
 
-가입 중 사용자 본인 정보만 제공한다. 응답의 `socialDisplayName`은 닉네임 입력란의 초기값으로 사용한다. 이 값은 Google ID 토큰의 `name`, Kakao ID 토큰의 `nickname`, Apple 로그인 요청의 `fullName`에서 가져온다. 제공값이 없으면 `null`을 반환한다.
+가입 중 사용자 본인 정보만 제공한다. `socialDisplayName`은 Google ID 토큰의 `name`, Kakao ID 토큰의 `nickname`, Apple 로그인 요청의 `fullName`에서 가져온다. 제공값이 없으면 `null`을 반환한다.
+
+닉네임을 입력하지 않으면 서비스가 임의 닉네임을 부여하므로, 소셜 표시 이름을 닉네임 입력란의 초기값으로 쓰지 않는다. Apple `fullName`도 같다(BE 논의).
 
 > 논의 필요
 >
-> - 이름과 나이의 필수 여부와 소셜 미제공값 보충 방식을 결정한다.
->
-> 출처: [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
-
-### USER-02 닉네임 중복 확인
-
-`GET /api/v1/nickname-availability`
-
-#### 인증
-
-유효한 가입 전용 토큰으로 확인한 가입 미완료 사용자만 요청할 수 있다. 인증 없이 공개하지 않으며, 일반 회원용 Access Token으로는 호출할 수 없다. 토큰은 `Authorization: Bearer {registrationToken}`으로 전달한다.
-
-#### 설명
-
-입력한 닉네임의 현재 사용 가능 여부를 조회한다.
-
-#### 요청
-
-##### Query Parameter
-
-| 필드 | 타입 | 필수 | 기본값 | 규칙 |
-| --- | --- | --- | --- | --- |
-| `nickname` | String | 필수 | 없음 | 1~10자, 한글 완성형(가~힣), 영문(A~Z, a~z)과 숫자(0~9)만 허용. 한글 자모, 공백과 특수문자 금지. 글자 수 산정 기준은 논의 필요. |
-
-요청 Body는 보내지 않는다.
-
-#### 성공 응답
-
-HTTP `200 OK`를 반환한다.
-
-응답 본문의 `data` 필드는 다음과 같다.
-
-| 필드 | 타입 | nullable | 포함 조건 | 설명 |
-| --- | --- | --- | --- | --- |
-| `nickname` | String | 아니요 | 항상 | 조회한 닉네임. |
-| `isAvailable` | Boolean | 아니요 | 항상 | 현재 시점의 사용 가능 여부. 예약을 의미하지 않는다. |
-
-```json
-{
-  "data": {
-    "nickname": "민지",
-    "isAvailable": true
-  }
-}
-```
-
-#### 오류
-
-[공통 오류 응답](common.md#오류-응답)을 따른다.
-
-| HTTP | 코드 | 조건 |
-| --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-| 401 | `COMMON_UNAUTHORIZED` | 소셜 로그인을 마친 가입 미완료 사용자인지 확인할 수 없음 |
-
-#### 처리 규칙
-
-1~10자, 한글 완성형(가~힣), 영문(A~Z, a~z)과 숫자(0~9)만 허용한다. 한글 자모, 공백과 특수문자는 사용할 수 없다. 중복 확인은 닉네임 해당 닉네임을 예약해 두지는 않는다.
-
-> 논의 필요
->
-> - 글자 수 계산 기준과 탈퇴 닉네임 재사용을 결정한다.
+> - 닉네임 초기값으로 쓰지 않으면 `socialDisplayName`을 응답할 이유가 없다. 응답에서 빼고 `member.social_display_name` 저장도 중단할지 정한다(구현 제안: 쓰지 않는 개인정보이므로 둘 다 중단).
 >
 > 출처: [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
 
@@ -186,7 +121,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 설명
 
-필수 가입 정보를 제출하고 일반 회원으로 가입을 완료한다. 정산 시 번거로운 점은 선택 항목이며 최대 2개를 전달할 수 있다. 기타를 선택하면 직접 입력한 내용을 함께 전달할 수 있다.
+필수 약관 동의와 만 18세 이상 확인을 제출하고 일반 회원으로 가입을 완료한다. 정산 시 번거로운 점은 선택 항목이며 최대 2개를 전달할 수 있다. 기타를 선택하면 직접 입력한 내용을 함께 전달할 수 있다.
 
 #### 요청
 
@@ -196,7 +131,10 @@ Content-Type: `application/json`
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `nickname` | String | 필수 | 없음 | 사용자가 최종 입력한 빌릿 닉네임. 닉네임 중복 확인과 같은 길이 및 문자 제한을 적용한다. |
+| `nickname` | String | 선택 | 없음 | 계정 닉네임. 1~10자, 한글 완성형(가~힣), 영문(A~Z, a~z)과 숫자(0~9)만 허용한다. 생략하면 서버가 임의 닉네임을 부여한다. 다른 회원과 겹쳐도 된다. |
+| `isAgeEligible` | Boolean | 필수 | 없음 | 만 18세 이상인지 확인한 값. `true`만 허용하며 값 자체는 저장하지 않는다. |
+| `platform` | String | 필수 | 없음 | 약관에 동의한 기기의 운영체제. `IOS`, `ANDROID` |
+| `appVersion` | String | 필수 | 없음 | 약관에 동의한 시점의 앱 버전. 1~20자. 약관 동의 기록에 저장한다. |
 | `agreements` | Array | 필수 | 없음 | 앱에 표시한 약관 버전별 동의 여부 |
 | `agreements[].termsId` | String | 필수 | 없음 | 앱에 표시한 약관 버전의 식별자 |
 | `agreements[].isAgreed` | Boolean | 필수 | 없음 | 해당 버전에 대한 동의 여부 |
@@ -208,14 +146,17 @@ Content-Type: `application/json`
 
 설문에 일부만 응답하면 응답한 필드만 보낸다. 별도로 허용하지 않은 필드의 `null` 처리 규칙은 [공통 규격](common.md#데이터와-예시의-해석)을 따른다.
 
-필수 약관의 동의가 누락되거나 `false`이면 `400 USER_REQUIRED_AGREEMENT_MISSING`을 반환한다. 선택 약관은 생략하거나 `false`로 보낼 수 있다.
+필수 약관의 동의가 누락되거나 `false`이면 `400 USER_REQUIRED_AGREEMENT_MISSING`을 반환한다. `isAgeEligible`이 `false`이면 `400 COMMON_INVALID_REQUEST`를 반환한다. 선택 약관은 생략하거나 `false`로 보낼 수 있다.
 
 ```json
 {
   "nickname": "빌릿여행",
+  "isAgeEligible": true,
+  "platform": "IOS",
+  "appVersion": "1.0.0",
   "agreements": [
-    { "termsId": "example-privacy-terms-id", "isAgreed": true },
-    { "termsId": "example-marketing-terms-id", "isAgreed": false }
+    { "termsId": "1", "isAgreed": true },
+    { "termsId": "2", "isAgreed": false }
   ],
   "survey": {
     "isTripOrganizer": true,
@@ -227,7 +168,9 @@ Content-Type: `application/json`
 
 > 논의 필요
 >
-> 이름과 나이의 필수 여부, 성별과 정산 설문의 선택지 코드, `OTHER` 선택 시 직접 입력의 필수 여부를 정한다.
+> - 이름과 나이를 선택 항목으로 받을지 정한다. [Docs PR #4](https://github.com/JECT-Study/Billit-5th-Docs/pull/4)는 선택 항목으로 다시 넣었고, 기존 결정은 받지 않는 것이라 PM에게 확인 중이다. 받기로 하면 이 요청에 `name`, `age`를 선택 필드로 추가한다.
+> - 임의 닉네임의 단어와 조합 방식은 [Docs 이슈 #5](https://github.com/JECT-Study/Billit-5th-Docs/issues/5)에서 정한다.
+> - 성별과 정산 설문의 선택지 코드, `OTHER` 선택 시 직접 입력의 필수 여부를 정한다.
 
 #### 성공 응답
 
@@ -255,16 +198,15 @@ HTTP `200 OK`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 요청 형식이나 필드가 올바르지 않음 |
 | 401 | `COMMON_UNAUTHORIZED` | 가입 전용 토큰으로 최초 가입 또는 동일 가입 요청의 복구 권한을 확인할 수 없음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-| 409 | `USER_NICKNAME_ALREADY_USED` | 가입 완료 시점에 닉네임이 이미 사용 중임 |
 | 400 | `USER_REQUIRED_AGREEMENT_MISSING` | 필수 약관의 동의가 누락되거나 동의하지 않음 |
 
 #### 처리 규칙
 
-가입 완료 요청의 `nickname`은 사용자가 최종 입력한 값이다. 서버는 필수 동의와 닉네임을 최종 검증한다. 설문을 제출하면 선택 개수가 2개 이하인지, 기타 입력이 기타 선택과 함께 제출됐는지 검증한다. 두 사용자가 동시에 같은 닉네임으로 가입하면 한 명만 성공한다. 가입 완료 응답을 받지 못한 앱은 같은 가입 전용 토큰과 같은 가입 내용으로 재시도해 회원용 Access Token과 Refresh Token을 받는다. 서버는 회원과 동의 기록을 중복 생성하거나 가입 정보를 다시 변경하지 않는다. 복구 범위와 남은 구현 선택은 [가입 전용 토큰 설계](../design/registration-token.md)를 따른다.
+서버는 필수 동의, 만 18세 이상 확인과 닉네임 형식을 검증한다. 닉네임을 생략하면 임의 닉네임을 부여한다. 설문을 제출하면 선택 개수가 2개 이하인지, 기타 입력이 기타 선택과 함께 제출됐는지 검증한다. 가입 완료 응답을 받지 못한 앱은 같은 가입 전용 토큰과 같은 가입 내용으로 재시도해 회원용 Access Token과 Refresh Token을 받는다. 서버는 회원과 동의 기록을 중복 생성하거나 가입 정보를 다시 변경하지 않는다. 복구 범위와 남은 구현 선택은 [가입 전용 토큰 설계](../design/registration-token.md)를 따른다.
 
 > 논의 필요
 >
-> - 이름과 나이의 필수 여부, 가입 완료 재시도의 식별 및 허용 기간과 토큰 재전달 또는 재발급 방식을 결정한다.
+> - 가입 완료 재시도의 식별 및 허용 기간과 토큰 재전달 또는 재발급 방식을 결정한다.
 >
 > 출처: [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
 
@@ -499,7 +441,6 @@ HTTP `204 No Content`를 반환하는 안이다. 응답 Body는 없다.
 | 400 | `USER_REQUIRED_AGREEMENT_MISSING` | 필수 약관 동의가 누락되거나 동의하지 않았다. |
 | 401 | `COMMON_UNAUTHORIZED` | 요청에 필요한 회원 또는 가입 전용 인증을 확인할 수 없다. |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없다. |
-| 409 | `USER_NICKNAME_ALREADY_USED` | 가입 완료 시점에 닉네임이 이미 사용 중이다. |
 | 413 | `USER_PROFILE_IMAGE_TOO_LARGE` | 이미지가 확정할 허용 용량을 초과한다. |
 | 415 | `USER_PROFILE_IMAGE_UNSUPPORTED` | 확정할 허용 이미지 형식에 해당하지 않는다. |
 

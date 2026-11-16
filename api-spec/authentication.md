@@ -14,7 +14,7 @@
 
 ## 문서 범위
 
-Google, Apple, Kakao 소셜 로그인, Access Token 갱신과 현재 기기 로그아웃을 다룬다. 소셜 로그인을 마쳤더라도 필수 약관과 닉네임 설정을 끝내기 전에는 가입 완료 회원으로 처리하지 않는다.
+Google, Apple, Kakao 소셜 로그인, Access Token 갱신과 현재 기기 로그아웃을 다룬다. 소셜 로그인을 마쳤더라도 필수 약관 동의와 만 18세 이상 확인을 끝내기 전에는 가입 완료 회원으로 처리하지 않는다.
 
 [목록](README.md) | [공통 API 스펙](common.md) | [인증 정책](../policy/authentication.md) | [가입 정책](../policy/user.md#회원가입)
 
@@ -53,7 +53,7 @@ Content-Type: `application/json`
 | `provider` | String | 필수 | 없음 | `GOOGLE`, `KAKAO`, `APPLE` 중 하나 |
 | `idToken` | String | 필수 | 없음 | 모바일 SDK에서 받은 ID 토큰 |
 | `authorizationCode` | String | 조건부 | 없음 | Apple 요청에서만 필수다. Apple 연결 해제에 필요한 토큰을 확보하기 위해 로그인 시 교환한다. |
-| `fullName` | String | 선택 | 없음 | Apple 요청에서만 보낼 수 있다. Apple SDK가 최초 권한 부여 시 이름을 반환한 경우에만 전달한다. 가입 화면의 닉네임 입력란 초기값으로 사용한다. |
+| `fullName` | String | 선택 | 없음 | Apple 요청에서만 보낼 수 있다. Apple SDK가 최초 권한 부여 시 이름을 반환한 경우에만 전달한다. 최대 100자. 닉네임 초기값으로 쓰지 않는다([USER-01](user.md#user-01-가입-정보-조회) 참고). |
 
 문자열에 빈 값, 공백만 있는 값과 null은 허용하지 않는다. Google과 Kakao 요청에는 `authorizationCode`와 `fullName`을 보내지 않는다. 기존 회원의 이름은 소셜 로그인으로 변경하지 않는다.
 
@@ -148,11 +148,11 @@ Access Token은 15분, 새 Refresh Token은 30일간 유효하다.
 
 갱신에 실패해도 만료된 Access Token으로 일반 회원 API를 사용할 수는 없다. Refresh Token이 만료되거나 유효하지 않으면 [인증 만료 정책](../policy/authentication.md#인증-만료)에 따라 다시 로그인하도록 안내한다.
 
-네트워크 오류로 갱신 응답을 받지 못하면 앱은 기존 Refresh Token으로 한 번만 다시 요청한다. 서버가 첫 요청에서 이미 토큰을 회전했다면 재요청을 재사용으로 처리해 해당 세션을 차단하고 `401`을 반환한다. 앱은 Refresh Token이 유효하지 않다는 401 응답을 받으면 다시 로그인을 요청한다. 재요청에서도 응답을 받지 못하면 네트워크 오류로 처리한다.
+네트워크 오류로 갱신 응답을 받지 못하면 앱은 같은 Refresh Token으로 한 번만 다시 요청한다. 서버가 첫 요청에서 이미 토큰을 회전했더라도, 마지막 갱신 후 30초 안에 직전 Refresh Token으로 들어온 첫 재요청은 응답을 받지 못한 재시도로 보고 새 토큰을 한 번 더 발급한다. 이 조건을 벗어나면 재사용으로 처리해 해당 세션을 차단하고 `401`을 반환한다. 앱은 Refresh Token이 유효하지 않다는 401 응답을 받으면 다시 로그인을 요청한다. 재요청에서도 응답을 받지 못하면 네트워크 오류로 처리한다.
 
 MVP에서는 기기 식별자를 기준으로 Refresh Token을 저장하지 않는다. 갱신과 로그아웃은 요청에 사용한 토큰에 연결된 로그인 세션을 기준으로 처리한다.
 
-갱신에 사용되어 폐기된 Refresh Token이 다시 제출되면 해당 로그인 세션을 즉시 차단하고 `401`을 반환한다. 해당 세션의 Access Token과 현재 Refresh Token은 더 이상 사용할 수 없다. 다른 로그인 세션은 유지한다.
+갱신에 사용되어 폐기된 Refresh Token이 위 재시도 조건을 벗어나 다시 제출되면 해당 로그인 세션을 즉시 차단하고 `401`을 반환한다. 해당 세션의 Access Token과 현재 Refresh Token은 더 이상 사용할 수 없다. 다른 로그인 세션은 유지한다.
 > 출처: [인증 유지 정책](../policy/authentication.md#인증-유지)
 
 ## 로그아웃 API

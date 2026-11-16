@@ -10,15 +10,16 @@
 
 이 설계는 2026-11-14 회의에서 검토했다. 회의에서 결론이 나지 않은 항목은 해당 절에 `논의 필요`로 남긴다.
 
-구현은 아래 PR에서 리뷰 중이며 아직 `develop`에 반영되지 않았다. 앞 PR이 병합된 뒤 다음 PR을 병합한다.
+구현은 아래 PR로 나눠 올렸다. 앞 PR이 병합된 뒤 다음 PR을 병합한다.
 
-| 순서 | 범위 | PR |
-| --- | --- | --- |
-| 1 | 토큰 발급과 검증, 요청 인증, `auth_session` | [Billit-5th-Server PR #30](https://github.com/JECT-Study/Billit-5th-Server/pull/30) |
-| 2 | Google, Kakao 소셜 로그인 | [Billit-5th-Server PR #31](https://github.com/JECT-Study/Billit-5th-Server/pull/31) |
-| 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) |
-| 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) |
-| 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) |
+| 순서 | 범위 | PR | 상태 |
+| --- | --- | --- | --- |
+| 1 | 토큰 발급과 검증, 요청 인증, `auth_session` | [Billit-5th-Server PR #30](https://github.com/JECT-Study/Billit-5th-Server/pull/30) | `develop` 병합 |
+| 2 | Google, Kakao 소셜 로그인 | [Billit-5th-Server PR #31](https://github.com/JECT-Study/Billit-5th-Server/pull/31) | 리뷰 중 |
+| 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) | 리뷰 중 |
+| 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) | 리뷰 중 |
+| 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) | 리뷰 중 |
+| 6 | 닉네임 선택 입력과 임의 닉네임 부여 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | 초안(Draft), 이 문서와 Docs 이슈 #5 정리 후 리뷰 |
 
 ## 토큰 종류와 검증
 
@@ -26,7 +27,7 @@
 | --- | --- | --- | --- |
 | Access Token | `ACCESS` | 15분 | 회원 API의 `Authorization` 헤더 |
 | Refresh Token | `REFRESH` | 30일 | 토큰 갱신, Access Token이 만료된 뒤의 로그아웃 |
-| 가입 전용 토큰 | `REGISTRATION` | 30분 | 가입 정보 조회, 닉네임 중복 확인, 가입 완료 |
+| 가입 전용 토큰 | `REGISTRATION` | 30분 | 가입 정보 조회, 가입 완료 |
 
 유효 기간의 기준은 [인증 만료 정책](../policy/authentication.md#인증-만료)과 [회원 식별 정책](../policy/authentication.md#회원-식별)이 관리한다. 위 표는 구현에서 사용하는 값을 함께 보여주기 위한 것이다.
 
@@ -100,7 +101,7 @@ Apple로 가입한 회원이 탈퇴하면 Apple에서 발급한 토큰을 폐기
 
 Apple 인가 코드는 한 번만 교환할 수 있다. 로그인 응답을 받지 못하면 앱은 Apple 인증부터 다시 진행해 새 인가 코드를 받는다. 서버도 같은 코드의 교환을 자동으로 재시도하지 않는다.
 
-Apple은 사용자 이름을 최초 권한 부여 때만 주므로, 서버는 받은 `fullName`을 `member.social_display_name`에 저장해 가입 화면의 닉네임 초기값으로 사용한다. Google은 ID 토큰의 `name`, Kakao는 `nickname`을 같은 컬럼에 저장한다.
+Apple은 사용자 이름을 최초 권한 부여 때만 주므로, 서버는 받은 `fullName`을 `member.social_display_name`에 저장한다. Google은 ID 토큰의 `name`, Kakao는 `nickname`을 같은 컬럼에 저장한다. 닉네임을 입력하지 않으면 임의 닉네임을 부여하기로 해서, 이 값은 Apple을 포함해 닉네임 초기값으로 쓰지 않는다(BE 논의). 저장을 계속할지는 [USER-01 논의 필요](../api-spec/user.md#user-01-가입-정보-조회)에서 정한다.
 
 > 논의 필요
 >
@@ -123,7 +124,7 @@ Apple은 사용자 이름을 최초 권한 부여 때만 주므로, 서버는 �
 
 > 논의 필요
 >
-> 갱신 응답을 받지 못했을 때의 재시도 횟수와 30초 유예 시간을 정한다. 회의에서는 한 번만 받을지, 여러 번 받을지 더 검토하기로 했다. 현재 [인증 만료 정책](../policy/authentication.md#인증-만료)은 앱이 한 번만 재요청한다고 적고 있고, 백엔드 OpenAPI의 `refreshTokens`는 재시도 없이 다시 로그인한다고 적고 있어 두 문서도 함께 맞춘다.
+> 갱신 응답을 받지 못했을 때의 재시도 횟수와 30초 유예 시간을 정한다. 회의에서는 한 번만 받을지, 여러 번 받을지 더 검토하기로 했다. [Docs PR #4](https://github.com/JECT-Study/Billit-5th-Docs/pull/4)가 [인증 만료 정책](../policy/authentication.md#인증-만료)에 지금 구현과 같은 30초 안의 첫 재요청 허용을 반영했고, [인증 API 스펙](../api-spec/authentication.md#auth-02-access-token-갱신)도 같은 기준으로 맞췄다.
 
 > 논의 필요
 >
