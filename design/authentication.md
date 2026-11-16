@@ -10,15 +10,15 @@
 
 이 설계는 2026-11-14 회의에서 검토했다. 회의에서 결론이 나지 않은 항목은 해당 절에 `논의 필요`로 남긴다.
 
-구현은 아래 PR로 나눠 올렸다. 앞 PR이 병합된 뒤 다음 PR을 병합한다.
+구현은 아래 PR로 나눠 올려 `develop`에 병합했고, 개발 서버에 배포했다.
 
 | 순서 | 범위 | PR | 상태 |
 | --- | --- | --- | --- |
 | 1 | 토큰 발급과 검증, 요청 인증, `auth_session` | [Billit-5th-Server PR #30](https://github.com/JECT-Study/Billit-5th-Server/pull/30) | `develop` 병합 |
-| 2 | Google, Kakao 소셜 로그인 | [Billit-5th-Server PR #31](https://github.com/JECT-Study/Billit-5th-Server/pull/31) | 리뷰 중 |
-| 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) | 리뷰 중 |
-| 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) | 리뷰 중 |
-| 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) | 리뷰 중 |
+| 2 | Google, Kakao 소셜 로그인 | [Billit-5th-Server PR #31](https://github.com/JECT-Study/Billit-5th-Server/pull/31) | `develop` 병합 |
+| 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) | `develop` 병합 |
+| 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) | `develop` 병합 |
+| 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) | `develop` 병합 |
 | 6 | 닉네임 선택 입력과 임의 닉네임 부여 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | 초안(Draft), 이 문서와 Docs 이슈 #5 정리 후 리뷰 |
 
 ## 토큰 종류와 검증
