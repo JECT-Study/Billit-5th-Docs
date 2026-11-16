@@ -19,7 +19,7 @@
 | 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) | 리뷰 중 |
 | 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) | 리뷰 중 |
 | 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) | 리뷰 중 |
-| 6 | 닉네임 선택 입력과 임의 닉네임 부여 | [Billit-5th-Server 이슈 #42](https://github.com/JECT-Study/Billit-5th-Server/issues/42) | 착수 전 |
+| 6 | 닉네임 선택 입력과 임의 닉네임 부여 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | 초안(Draft), 이 문서와 Docs 이슈 #5 정리 후 리뷰 |
 
 ## 토큰 종류와 검증
 
