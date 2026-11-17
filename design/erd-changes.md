@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | `trip_member.guest_name` | `VARCHAR(10)`, 비로그인 참여자 이름. `UNIQUE (trip_id, guest_name)` | 로그인 참여자의 여행방 닉네임도 함께 저장하고 기존 제약 유지 | 로그인 참여자와 비로그인 참여자 모두의 여행방 닉네임을 저장한다. 같은 여행에서는 로그인 여부와 관계없이 이름 중복을 금지하며 비로그인 참여자 등록, 이름 수정과 여행 참여에 모두 적용한다. |
 | `trip.members_locked_at` | `TIMESTAMPTZ NULL`, NULL이면 참여자 초대 중 | 여행 확정 여부를 `status` 컬럼으로 관리하고, 확정 시각은 `confirmed_at`으로 이름을 바꿔 함께 저장 | `status` 컬럼으로 관리하며, API에서는 `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후)로 전달한다. 확정 시각도 `confirmed_at`으로 함께 저장한다. |
-| `trip.country_code` | `CHAR(2) NOT NULL` | `VARCHAR(3) NOT NULL`로 변경. 대표 국가 필수 유지. 기타 국가는 `ETC`를 저장하고 입력한 텍스트는 그대로 저장 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. 기타 국가이면 `country_code`에 API 값과 같은 `ETC`를 저장하고, 세 글자를 담도록 `country_code`를 `VARCHAR(3)`으로 바꾼다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. `custom_country_name`의 최대 길이는 논의 필요. |
+| `trip.country_code` | `CHAR(2) NOT NULL` | `VARCHAR(3) NOT NULL`로 변경. 대표 국가 필수 유지. 기타 국가는 `ETC`를 저장하고 입력한 텍스트는 그대로 저장 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. 기타 국가이면 `country_code`에 API 값과 같은 `ETC`를 저장하고, 세 글자를 담도록 `country_code`를 `VARCHAR(3)`으로 바꾼다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. 기타 국가명은 공백을 제외하고 최대 10자다([기본 정보](../policy/trip.md#기본-정보)). |
 | `trip_member.role` | `OWNER`, `MEMBER` | `OWNER`를 `ADMIN`으로 변경 | 역할 값 `ADMIN`, `MEMBER` 확정. |
 | 참여자 상태 | 컬럼 없음. `member_id`와 `guest_name` 값으로 구분 | `trip_member`에 참여자 상태 enum 컬럼 `trip_member_status` 추가 | `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원)으로 관리한다. 여행에 참여할 때 `member_id`가 있는지 보고 상태를 정하고, 다른 기능은 이 값으로 구분한다. |
 | 회원 중복 참여 | `UNIQUE (trip_id, guest_name)`만 있고 같은 회원의 중복 참여를 막는 제약은 없음 | `UNIQUE (trip_id, member_id)` 추가 | 같은 회원이 한 여행에 두 번 참여하지 않게 한다. 나간 시각(`left_at`) 논의가 끝난 뒤 `left_at`과 함께 마이그레이션에 추가한다. |
@@ -28,7 +28,6 @@
 
 > 논의 필요
 >
-> - `custom_country_name`의 최대 길이를 정한다.
 > - 나간 회원의 상태와 과거 기록을 남겨야 하지만 `trip_member`에는 나간 시각이 없다. Notion 검토 이력은 나간 시각(`left_at`)으로 구분하고 같은 회원은 기존 참여 ID를 다시 쓰는 방향이다. `left_at` 추가 여부를 정한다. 재참여 기준은 [재참여](../policy/trip.md#재참여)를 따른다.
 
 ## 추가 컬럼 후보
