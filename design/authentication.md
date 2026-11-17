@@ -19,7 +19,7 @@
 | 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) | `develop` 병합 |
 | 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) | `develop` 병합 |
 | 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) | `develop` 병합 |
-| 6 | 가입 시 임의 닉네임 부여, 닉네임 중복 확인 제거 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | 초안(Draft), Docs PR #4 병합과 Docs 이슈 #5 정리 후 리뷰 |
+| 6 | 가입 시 임의 닉네임 부여, 닉네임 중복 확인 제거 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | `develop` 병합(닉네임 단어는 임시, [Docs 이슈 #5](https://github.com/JECT-Study/Billit-5th-Docs/issues/5)에서 결정) |
 
 ## 토큰 종류와 검증
 
