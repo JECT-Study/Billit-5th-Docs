@@ -63,6 +63,10 @@
 
 operationId는 백엔드 [API 문서 기준](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-documentation.md#태그와-operationid)의 이름 규칙을 따른다.
 
+> 논의 필요
+>
+> 회원이 자기 여행방 닉네임을 수정하는 API의 경로와 요청 형식을 정한다. 회원은 여행에 참여한 뒤에도 자신의 여행방 닉네임을 수정할 수 있다([여행방 닉네임](../policy/trip.md#여행방-닉네임)).
+
 ## 여행 조회와 관리 API
 
 ### TRIP-01 내 여행 목록
