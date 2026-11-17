@@ -17,7 +17,7 @@
 
 ## 문서 범위
 
-계정 닉네임은 다른 회원과 겹쳐도 되며 가입 후 변경할 수 있다([유저 정책](../policy/user.md#닉네임)). 그래서 닉네임 중복 확인 API(기존 USER-02)는 두지 않는다. 계정 닉네임 변경 API는 아직 정의하지 않았다. 프로필 이미지 처리 방식은 기존 ERD만으로 확정하지 않는다.
+가입할 때는 계정 닉네임을 받지 않고 서비스가 임의 닉네임을 부여한다. 계정 닉네임은 다른 회원과 겹쳐도 되며 가입 후 변경할 수 있다([유저 정책](../policy/user.md#닉네임)). 그래서 닉네임 중복 확인 API(기존 USER-02)는 두지 않는다. 계정 닉네임 변경 API는 아직 정의하지 않았다. 프로필 이미지 처리 방식은 기존 ERD만으로 확정하지 않는다.
 
 [목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
 
@@ -103,11 +103,11 @@ HTTP `200 OK`를 반환한다.
 
 가입 중 사용자 본인 정보만 제공한다. `socialDisplayName`은 Google ID 토큰의 `name`, Kakao ID 토큰의 `nickname`, Apple 로그인 요청의 `fullName`에서 가져온다. 제공값이 없으면 `null`을 반환한다.
 
-닉네임을 입력하지 않으면 서비스가 임의 닉네임을 부여하므로, 소셜 표시 이름을 닉네임 입력란의 초기값으로 쓰지 않는다. Apple `fullName`도 같다(BE 논의).
+가입할 때 닉네임을 받지 않고 서비스가 임의 닉네임을 부여하므로, 소셜 표시 이름을 닉네임 초기값으로 쓰지 않는다. Apple `fullName`도 같다(BE 논의).
 
 > 논의 필요
 >
-> - 닉네임 초기값으로 쓰지 않으면 `socialDisplayName`을 응답할 이유가 없다. 응답에서 빼고 `member.social_display_name` 저장도 중단할지 정한다(구현 제안: 쓰지 않는 개인정보이므로 둘 다 중단).
+> - 닉네임 초기값으로 쓰지 않으므로 `socialDisplayName`을 응답할 이유가 없다. 응답에서 빼고 `member.social_display_name` 저장도 중단할지 정한다(구현 제안: 쓰지 않는 개인정보이므로 둘 다 중단).
 >
 > 출처: [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
 
@@ -131,7 +131,6 @@ Content-Type: `application/json`
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `nickname` | String | 선택 | 없음 | 계정 닉네임. 1~10자, 한글 완성형(가~힣), 영문(A~Z, a~z)과 숫자(0~9)만 허용한다. 생략하면 서버가 임의 닉네임을 부여한다. 다른 회원과 겹쳐도 된다. |
 | `isAgeEligible` | Boolean | 필수 | 없음 | 만 18세 이상인지 확인한 값. `true`만 허용하며 값 자체는 저장하지 않는다. |
 | `platform` | String | 필수 | 없음 | 약관에 동의한 기기의 운영체제. `IOS`, `ANDROID` |
 | `appVersion` | String | 필수 | 없음 | 약관에 동의한 시점의 앱 버전. 1~20자. 약관 동의 기록에 저장한다. |
@@ -144,13 +143,14 @@ Content-Type: `application/json`
 | `survey.settlementPainPoints` | Array&lt;String&gt; | 선택 | 없음 | 정산 시 번거로운 점을 최대 2개까지 전달한다. 중복은 허용하지 않는다. |
 | `survey.otherSettlementPainPoint` | String | 선택 | 없음 | `settlementPainPoints`에 `OTHER`가 있을 때만 전달할 수 있다. |
 
+계정 닉네임, 이름과 나이는 받지 않는다. 요청에 `nickname`을 보내면 정의하지 않은 필드로 보고 `400 COMMON_INVALID_REQUEST`를 반환한다.
+
 설문에 일부만 응답하면 응답한 필드만 보낸다. 별도로 허용하지 않은 필드의 `null` 처리 규칙은 [공통 규격](common.md#데이터와-예시의-해석)을 따른다.
 
 필수 약관의 동의가 누락되거나 `false`이면 `400 USER_REQUIRED_AGREEMENT_MISSING`을 반환한다. `isAgeEligible`이 `false`이면 `400 COMMON_INVALID_REQUEST`를 반환한다. 선택 약관은 생략하거나 `false`로 보낼 수 있다.
 
 ```json
 {
-  "nickname": "빌릿여행",
   "isAgeEligible": true,
   "platform": "IOS",
   "appVersion": "1.0.0",
@@ -168,7 +168,6 @@ Content-Type: `application/json`
 
 > 논의 필요
 >
-> - 이름과 나이를 선택 항목으로 받을지 정한다. [Docs PR #4](https://github.com/JECT-Study/Billit-5th-Docs/pull/4)는 선택 항목으로 다시 넣었고, 기존 결정은 받지 않는 것이라 PM에게 확인 중이다. 받기로 하면 이 요청에 `name`, `age`를 선택 필드로 추가한다.
 > - 임의 닉네임의 단어와 조합 방식은 [Docs 이슈 #5](https://github.com/JECT-Study/Billit-5th-Docs/issues/5)에서 정한다.
 > - 성별과 정산 설문의 선택지 코드, `OTHER` 선택 시 직접 입력의 필수 여부를 정한다.
 
@@ -202,7 +201,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 처리 규칙
 
-서버는 필수 동의, 만 18세 이상 확인과 닉네임 형식을 검증한다. 닉네임을 생략하면 임의 닉네임을 부여한다. 설문을 제출하면 선택 개수가 2개 이하인지, 기타 입력이 기타 선택과 함께 제출됐는지 검증한다. 가입 완료 응답을 받지 못한 앱은 같은 가입 전용 토큰과 같은 가입 내용으로 재시도해 회원용 Access Token과 Refresh Token을 받는다. 서버는 회원과 동의 기록을 중복 생성하거나 가입 정보를 다시 변경하지 않는다. 복구 범위와 남은 구현 선택은 [가입 전용 토큰 설계](../design/registration-token.md)를 따른다.
+서버는 필수 동의와 만 18세 이상 확인을 검증하고, 가입을 완료하는 회원에게 임의 닉네임을 부여한다. 설문을 제출하면 선택 개수가 2개 이하인지, 기타 입력이 기타 선택과 함께 제출됐는지 검증한다. 가입 완료 응답을 받지 못한 앱은 같은 가입 전용 토큰과 같은 가입 내용으로 재시도해 회원용 Access Token과 Refresh Token을 받는다. 서버는 회원과 동의 기록을 중복 생성하거나 가입 정보를 다시 변경하지 않는다. 복구 범위와 남은 구현 선택은 [가입 전용 토큰 설계](../design/registration-token.md)를 따른다.
 
 > 논의 필요
 >
