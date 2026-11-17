@@ -7,11 +7,14 @@
 | 대상 | 기존 검토 DDL | 변경 방향 | 확정 범위 |
 | --- | --- | --- | --- |
 | `trip_member.guest_name` | `VARCHAR(10)`, 비로그인 참여자 이름. `UNIQUE (trip_id, guest_name)` | 로그인 참여자의 여행방 닉네임도 함께 저장하고 기존 제약 유지 | 로그인 참여자와 비로그인 참여자 모두의 여행방 닉네임을 저장한다. 같은 여행에서는 로그인 여부와 관계없이 이름 중복을 금지하며 비로그인 참여자 등록, 이름 수정과 여행 참여에 모두 적용한다. |
-| `trip.members_locked_at` | `TIMESTAMPTZ NULL`, NULL이면 참여자 초대 중 | 여행 확정 여부를 상태 값으로 관리 | 상태 값으로 관리하며, API에서는 `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후)로 전달한다. 상태 컬럼의 이름과 `members_locked_at`을 함께 유지할지는 논의 필요. |
-| `trip.country_code` | `CHAR(2) NOT NULL` | 대표 국가 필수 유지. 기타 국가는 입력한 텍스트 그대로 저장 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 저장 컬럼은 논의 필요. |
+| `trip.members_locked_at` | `TIMESTAMPTZ NULL`, NULL이면 참여자 초대 중 | 여행 확정 여부를 `status` 컬럼으로 관리하고, 확정 시각은 `confirmed_at`으로 이름을 바꿔 함께 저장 | `status` 컬럼으로 관리하며, API에서는 `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후)로 전달한다. 확정 시각도 `confirmed_at`으로 함께 저장한다. |
+| `trip.country_code` | `CHAR(2) NOT NULL` | 대표 국가 필수 유지. 기타 국가는 입력한 텍스트 그대로 저장 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. 최대 길이와 기타 국가일 때 `country_code`에 저장할 값은 논의 필요. |
 | `trip_member.role` | `OWNER`, `MEMBER` | `OWNER`를 `ADMIN`으로 변경 | 역할 값 `ADMIN`, `MEMBER` 확정. |
+| 참여자 상태 | 컬럼 없음. `member_id`와 `guest_name` 값으로 구분 | `trip_member`에 참여자 상태 enum 컬럼 `trip_member_status` 추가 | `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원)으로 관리한다. 여행에 참여할 때 `member_id`가 있는지 보고 상태를 정하고, 다른 기능은 이 값으로 구분한다. |
+| 회원 중복 참여 | `UNIQUE (trip_id, guest_name)`만 있고 같은 회원의 중복 참여를 막는 제약은 없음 | `UNIQUE (trip_id, member_id)` 추가 | 같은 회원이 한 여행에 두 번 참여하지 않게 한다. 나간 시각(`left_at`) 논의가 끝난 뒤 `left_at`과 함께 마이그레이션에 추가한다. |
 | `member.nickname` | `UNIQUE (nickname)` | UNIQUE 제약 제거 | 계정 닉네임 중복 허용 확정. 여행방에서는 [여행방 닉네임](../policy/trip.md#여행방-닉네임)을 사용한다. |
-| 여행 생성 고유키 | 없음 | 만든 여행과 함께 고유키 보관 | 여행 생성에만 사용하고 만료 없이 보관하는 것은 확정. 컬럼과 제약 후보는 아래 표와 [여행 생성 멱등성](idempotency.md#여행-생성-멱등성)을 따른다. |
+| `member.name`, `member.age` | `name VARCHAR(50)`, `age INTEGER`, NULL이면 미입력 | 두 컬럼 삭제 | 가입할 때 이름과 나이를 입력받지 않아 사용하지 않는다([선택 정보](../policy/user.md#선택-정보)). |
+| 여행 생성 고유키 | 없음 | `trip.idempotency_key UUID` 추가, 키 단독 UNIQUE | 여행 생성에만 사용하고 만료 없이 여행과 함께 보관한다. 여행과 같은 트랜잭션에 저장하며 키 단독 UNIQUE 제약을 둔다([여행 생성 멱등성](idempotency.md#여행-생성-멱등성)). |
 | `settlement.created_at` | `TIMESTAMPTZ NOT NULL`, 준비 생성 시 기록 | NULL 허용, 준비 시 비워두고 정산 확정 시 기록 | 회의 결정. `issued_at` 추가안은 기각됐다. |
 | `settlement.deleted_at` | 컬럼 없음 | `TIMESTAMPTZ NULL` 추가, 만료 또는 정상 이탈한 준비 정산을 논리 삭제 | 후속 설계에서 정리한 방향. 지출 점유 해제와 같은 트랜잭션에서 기록한다. |
 | 잠금 식별값 | 소유자와 만료 시각만 존재 | 잠금 작업별 토큰 저장 및 요청 전달 | 토큰 도입은 회의 결정. 테이블별 배치, 이름과 타입은 제안이다. |
@@ -20,12 +23,12 @@
 
 `trip`, `trip_member`와 `member`의 기존 값은 백엔드 `develop`의 초기 마이그레이션 `V20261107063430__create_initial_schema.sql`(커밋 `c857020`)에서 확인했다.
 
-같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다. 로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로, 백엔드 Flyway 마이그레이션의 `guest_name` 주석을 여행방 닉네임 기준으로 고쳐야 한다.
+같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다. 로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로, 백엔드 Flyway 마이그레이션의 `guest_name` 주석을 여행방 닉네임 기준으로 고쳐야 한다. 같은 주석의 '여행 시작 전 수정 가능'도 여행 확정 전과 후 모두 수정할 수 있는 기준으로 고쳐야 한다([비로그인 참여자](../policy/trip.md#비로그인-참여자)).
 
 > 논의 필요
 >
-> - 여행 확정 상태를 상태 값으로 관리하면 확정 시각을 따로 저장하지 않아도 된다. 다만 그러면 여행을 확정한 시각이 남지 않는다. 상태 컬럼과 `members_locked_at`을 모두 둘지, `members_locked_at`을 삭제할지 결정한다.
-> - 기타 국가를 텍스트로 저장하려면 `country_code CHAR(2)` 외에 별도 컬럼이 필요한지 결정한다.
+> - `custom_country_name`의 최대 길이를 정한다.
+> - 기타 국가를 고르면 `country_code`에 저장할 값을 정한다. API 값 `ETC`는 세 글자라 지금 타입(`CHAR(2)`)에 담을 수 없다.
 > - 나간 회원의 상태와 과거 기록을 남겨야 하지만 `trip_member`에는 나간 시각이 없다. Notion 검토 이력은 나간 시각(`left_at`)으로 구분하고 같은 회원은 기존 참여 ID를 다시 쓰는 방향이다. `left_at` 추가 여부를 정한다. 재참여 기준은 [재참여](../policy/trip.md#재참여)를 따른다.
 
 ## 추가 컬럼 후보
@@ -44,7 +47,6 @@
 | `expense` | `exchange_rate_base_date` | `DATE` | 환율의 실제 기준일 보존 후보 | [환율 보존](expense-calculation.md#저장-데이터) |
 | `expense` 또는 요청 기록 | `idempotency_key` | `UUID` 또는 문자열 | 앱 저장 요청의 고유키 | [멱등성](idempotency.md) |
 | `expense` 또는 요청 기록 | `request_hash` | 문자열 또는 바이트 타입 | 같은 키의 입력 내용 비교 후보 | [멱등성](idempotency.md) |
-| `trip` | `idempotency_key` | `UUID`, 키 단독 UNIQUE | 여행 생성 요청의 고유키. 만료 없이 여행과 함께 보관한다. | [여행 생성 멱등성](idempotency.md#여행-생성-멱등성) |
 
 기존 `exchange_rate_source`는 API 자동값인지 수동 입력값인지 구분한다. 기관명과 기준일은 이 값과 구분한다.
 

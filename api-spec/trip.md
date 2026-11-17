@@ -13,14 +13,13 @@
   - [TRIP-05 초대 정보 조회](#trip-05-초대-정보-조회)
   - [TRIP-06 초대 코드 검색](#trip-06-초대-코드-검색)
   - [TRIP-07 여행 참여](#trip-07-여행-참여)
-  - [TRIP-08 참여자 목록](#trip-08-참여자-목록)
-  - [TRIP-09 비로그인 참여자 등록](#trip-09-비로그인-참여자-등록)
-  - [TRIP-10 비로그인 이름 수정](#trip-10-비로그인-이름-수정)
-  - [TRIP-11 비로그인 참여자 삭제](#trip-11-비로그인-참여자-삭제)
+  - [TRIP-08 비로그인 참여자 등록](#trip-08-비로그인-참여자-등록)
+  - [TRIP-09 비로그인 이름 수정](#trip-09-비로그인-이름-수정)
+  - [TRIP-10 비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)
 - [확정과 종료 API](#확정과-종료-api)
-  - [TRIP-12 여행 확정](#trip-12-여행-확정)
-  - [TRIP-13 여행 나가기](#trip-13-여행-나가기)
-  - [TRIP-14 여행 삭제](#trip-14-여행-삭제)
+  - [TRIP-11 여행 확정](#trip-11-여행-확정)
+  - [TRIP-12 여행 나가기](#trip-12-여행-나가기)
+  - [TRIP-13 여행 삭제](#trip-13-여행-삭제)
 - [공통 모델](#공통-모델)
   - [TripSummary](#tripsummary)
   - [TripListItem](#triplistitem)
@@ -55,19 +54,14 @@
 | [초대 정보 조회](#trip-05-초대-정보-조회) | `GET` | `/api/v1/trips/{tripId}/invitation` | 여행 관리자 (여행 확정 전) | `getTripInvitation` |
 | [초대 코드 검색](#trip-06-초대-코드-검색) | `GET` | `/api/v1/trip-invitations` | 로그인 필요 | `searchTripInvitation` |
 | [여행 참여](#trip-07-여행-참여) | `POST` | `/api/v1/trip-memberships` | 로그인 필요 | `joinTripByInviteCode` |
-| [참여자 목록](#trip-08-참여자-목록) | `GET` | `/api/v1/trips/{tripId}/members` | 여행 참여자 | 미정 |
-| [비로그인 참여자 등록](#trip-09-비로그인-참여자-등록) | `POST` | `/api/v1/trips/{tripId}/guests` | 여행 관리자 (여행 확정 전) | `createTripGuest` |
-| [비로그인 이름 수정](#trip-10-비로그인-이름-수정) | `PATCH` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 (여행 확정 전) | 미정 |
-| [비로그인 참여자 삭제](#trip-11-비로그인-참여자-삭제) | `DELETE` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 (여행 확정 전) | `deleteTripGuest` |
-| [여행 확정](#trip-12-여행-확정) | `POST` | `/api/v1/trips/{tripId}/confirm` | 여행 관리자 | `confirmTrip` |
-| [여행 나가기](#trip-13-여행-나가기) | `POST` | `/api/v1/trips/{tripId}/leave` | 여행 참여자 (관리자 제외) | `leaveTrip` |
-| [여행 삭제](#trip-14-여행-삭제) | `DELETE` | `/api/v1/trips/{tripId}` | 여행 관리자 | `deleteTrip` |
+| [비로그인 참여자 등록](#trip-08-비로그인-참여자-등록) | `POST` | `/api/v1/trips/{tripId}/guests` | 여행 관리자 (여행 확정 전) | `createTripGuest` |
+| [비로그인 이름 수정](#trip-09-비로그인-이름-수정) | `PATCH` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 | `updateTripGuest` |
+| [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제) | `DELETE` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 (여행 확정 전) | `deleteTripGuest` |
+| [여행 확정](#trip-11-여행-확정) | `POST` | `/api/v1/trips/{tripId}/confirm` | 여행 관리자 | `confirmTrip` |
+| [여행 나가기](#trip-12-여행-나가기) | `POST` | `/api/v1/trips/{tripId}/leave` | 여행 참여자 (관리자 제외) | `leaveTrip` |
+| [여행 삭제](#trip-13-여행-삭제) | `DELETE` | `/api/v1/trips/{tripId}` | 여행 관리자 | `deleteTrip` |
 
 operationId는 백엔드 [API 문서 기준](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-documentation.md#태그와-operationid)의 이름 규칙을 따른다.
-
-> 논의 필요
->
-> 참여자 목록과 비로그인 이름 수정 API는 operationId를 아직 정하지 않았다. 참여자 목록을 [여행 상세](#trip-03-여행-상세) API 하나로 조회할지, [참여자 목록](#trip-08-참여자-목록) API를 따로 두어 두 API로 나눌지는 참여자 목록의 논의 사항을 따른다.
 
 ## 여행 조회와 관리 API
 
@@ -112,6 +106,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
       "tripId": "trip-example-a",
       "name": "도쿄 여행",
       "countryCode": "JP",
+      "customCountryName": null,
       "startDate": "2026-11-05",
       "endDate": "2026-11-07",
       "memberCapacity": 3,
@@ -184,11 +179,38 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 
 > 논의 필요
 >
-> 기타 국가의 전달 방식이 정해지지 않아 전체 요청 예시는 보류한다.
+> 다음 요청 예시는 검토 제안이다.
 >
 > Content-Type: `application/json`
 >
 > 요청 필드: [TripCreate](#tripcreate).
+>
+> ```json
+> {
+>   "name": "도쿄 여행",
+>   "countryCode": "JP",
+>   "baseCurrency": "JPY",
+>   "startDate": "2026-11-05",
+>   "endDate": "2026-11-07",
+>   "memberCapacity": 3,
+>   "nickname": "민지"
+> }
+> ```
+>
+> 기타 국가를 선택한 예시:
+>
+> ```json
+> {
+>   "name": "하노이 여행",
+>   "countryCode": "ETC",
+>   "customCountryName": "베트남",
+>   "baseCurrency": "USD",
+>   "startDate": "2026-12-01",
+>   "endDate": "2026-12-04",
+>   "memberCapacity": 4,
+>   "nickname": "민지"
+> }
+> ```
 
 #### 성공 응답
 
@@ -208,6 +230,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >     "tripId": "trip-example-a",
 >     "name": "도쿄 여행",
 >     "countryCode": "JP",
+>     "customCountryName": null,
 >     "startDate": "2026-11-05",
 >     "endDate": "2026-11-07",
 >     "baseCurrency": "JPY",
@@ -245,8 +268,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 > 논의 필요
 >
-> - 기타 국가의 전달 방식은 [TripSummary](#tripsummary)의 논의 사항에 따라 정한 뒤 전체 요청 예시를 작성한다.
-> - 여행명 글자 수와 공백 검증을 결정한다.
+> - 여행명에 공백만 입력한 경우의 검증을 결정한다.
 > - 같은 키의 요청이 동시에 왔을 때 늦게 처리된 요청의 응답과 `trip`에 생성자 컬럼을 추가할지는 [여행 생성 멱등성](../design/idempotency.md#여행-생성-멱등성)의 논의 사항을 따른다.
 >
 > 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
@@ -296,6 +318,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >     "tripId": "trip-example-a",
 >     "name": "도쿄 여행",
 >     "countryCode": "JP",
+>     "customCountryName": null,
 >     "startDate": "2026-11-05",
 >     "endDate": "2026-11-07",
 >     "baseCurrency": "JPY",
@@ -347,11 +370,13 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 여행 종료일이 지나도 조회 가능하다. 삭제와 생성자 탈퇴로 차단된 여행은 진입을 차단한다.
 
-참여자 목록은 미참여 빈자리, 관리자, 로그인 참여자(참여한 순서), 비로그인 참여자(관리자가 추가한 순서) 순으로 제공한다. 참여자별 부담액은 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다([여행 조회](../policy/trip.md#여행-조회)와 같은 규칙).
+참여자 목록은 미참여 빈자리, 관리자, 로그인 참여자(참여한 순서), 비로그인 참여자(관리자가 추가한 순서) 순으로 제공한다. 참여자별 부담액은 참여자 목록의 각 참여자([Participant](#participant))에 담는다. 부담액은 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다([여행 조회](../policy/trip.md#여행-조회)와 같은 규칙).
+
+참여자 목록만 조회하는 API는 따로 두지 않는다. 빈자리를 부담자로 제공하지 않는다. 참여자 상태는 `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) 네 값으로 구분한다.
 
 > 논의 필요
 >
-> - 기타 국가의 표현, 참여자 상태와 빈자리의 응답 표현, 참여자별 부담액을 담을 응답 필드를 결정한다.
+> - 참여자별 부담액을 담을 응답 필드의 이름과 빈자리의 응답 표현을 결정한다.
 >
 > 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
@@ -386,14 +411,15 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 > 논의 필요
 >
-> 다음 요청 필드는 [TripCreate](#tripcreate)의 제안 이름을 따른다. 기타 국가의 전달 방식은 [TripSummary](#tripsummary)의 논의 사항을 따른다.
+> 다음 요청 필드는 [TripCreate](#tripcreate)의 제안 이름을 따른다.
 >
 > Content-Type: `application/json`
 >
 > | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 > | --- | --- | --- | --- | --- |
-> | `name` | String | 선택 | 없음 | 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
-> | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU` 중 하나 또는 기타 국가([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
+> | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
+> | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
 > | `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
 > | `startDate` | String | 선택 | 없음 | YYYY-MM-DD. 여행 시작일. `null` 불가. |
 > | `endDate` | String | 선택 | 없음 | YYYY-MM-DD, 여행 시작일 이상. `null` 불가. |
@@ -424,6 +450,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >     "tripId": "trip-example-a",
 >     "name": "오사카 여행",
 >     "countryCode": "JP",
+>     "customCountryName": null,
 >     "startDate": "2026-11-05",
 >     "endDate": "2026-11-07",
 >     "baseCurrency": "JPY",
@@ -458,12 +485,6 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 #### 처리 규칙
 
 확정 후 정원 변경은 금지한다. 등록 인원보다 줄일 수 없다. 앱이 확정 후 정원 입력을 비활성화해도 서버는 확정 여부와 등록 인원을 다시 확인해 조건에 맞지 않는 변경을 거절한다. 기존 지출과 정산에 소급 반영하지 않는다.
-
-> 논의 필요
->
-> - 기타 국가의 전달 방식은 [TripSummary](#tripsummary)의 논의 사항을 따른다.
->
-> 출처: [정책](../policy/trip.md#정보와-인원-수정) | 기존 검토 DDL `trip.sql`
 
 ## 초대와 참여자 API
 
@@ -696,95 +717,18 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 #### 처리 규칙
 
-이미 참여 중인 본인은 추가 등록 없이 기존 tripId와 tripMemberId를 반환한다. 참여 성공 응답을 받지 못해 재요청해도 같은 참여 정보를 200으로 반환한다. 이 재요청 응답은 현재 참여 중인 회원에게 적용하며, 나간 뒤 재참여하는 경우의 참여 ID 재사용 여부와 구분한다. 신규 참여는 여행 유효성, 확정 여부, 빈자리와 여행방 닉네임 중복을 재검증한다. 동시 요청으로 중복 참여와 정원 초과를 만들지 않는다.
+이미 참여 중인 본인은 추가 등록 없이 기존 tripId와 tripMemberId를 반환한다. 참여 성공 응답을 받지 못해 재요청해도 같은 참여 정보를 200으로 반환한다. 이 재요청 응답은 현재 참여 중인 회원에게 적용하며, 나간 뒤 재참여하는 경우의 참여 ID 재사용 여부와 구분한다. 신규 참여는 여행 유효성, 확정 여부, 빈자리와 여행방 닉네임 중복을 재검증한다. 동시 요청으로 중복 참여와 정원 초과를 만들지 않는다. 같은 회원의 중복 참여는 `(trip_id, member_id)` UNIQUE 제약으로 막는다([ERD 변경 목록](../design/erd-changes.md#반영할-변경)).
 
-서버는 초대 코드의 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 신규 참여자가 입력한 여행방 닉네임이 같은 여행의 로그인 참여자나 비로그인 참여자의 여행방 닉네임과 같으면 참여를 거절한다. 같은 이름의 비로그인 참여자 때문에 거절됐다면 관리자가 [비로그인 참여자 삭제](#trip-11-비로그인-참여자-삭제)로 그 참여자를 삭제한 뒤 참여할 수 있다.
+서버는 초대 코드의 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 신규 참여자가 입력한 여행방 닉네임이 같은 여행의 로그인 참여자나 비로그인 참여자의 여행방 닉네임과 같으면 참여를 거절한다. 같은 이름의 비로그인 참여자 때문에 거절됐다면 관리자가 [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)로 그 참여자를 삭제한 뒤 참여할 수 있다.
 
 > 논의 필요
 >
-> - 동시 요청에서 중복 참여와 정원 초과를 방지하는 저장 제약 및 트랜잭션 방식을 결정한다.
+> - 동시 요청에서 정원 초과를 막는 트랜잭션 방식을 결정한다.
 > - 확정 전 재참여 시 기존 참여 ID 재사용 여부를 결정한다.
 >
 > 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
-### TRIP-08 참여자 목록
-
-`GET /api/v1/trips/{tripId}/members`
-
-> 논의 필요
->
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
-
-#### 인증
-
-로그인한 회원 중 해당 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
-
-#### 설명
-
-여행의 등록 참여자와 빈자리를 조회한다.
-
-#### 요청
-
-##### Path Parameter
-
-| 필드 | 타입 | 필수 | 기본값 | 규칙 |
-| --- | --- | --- | --- | --- |
-| `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-
-요청 Body는 보내지 않는다.
-
-#### 성공 응답
-
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 Array&lt;[Participant](#participant)&gt;이다. 필드 정의는 해당 모델을 따른다. 이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다. 전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": [
->     {
->       "tripMemberId": "participant-example-a",
->       "memberId": "member-example-a",
->       "displayName": "민지",
->       "role": "ADMIN",
->       "isVacant": false
->     }
->   ]
-> }
-> ```
-
-#### 오류
-
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-
-#### 처리 규칙
-
-참여자 목록은 [여행 상세](#trip-03-여행-상세) 응답에 포함한다. 상세 화면 진입에 이 API의 추가 호출을 요구하지 않는다. 빈자리를 부담자로 제공하지 않는다.
-
-> 논의 필요
->
-> - 참여자 목록을 여행 상세 API 하나로 조회할지, 이 API를 따로 두어 두 API로 나눌지 정한다. 다른 화면에서 참여자 목록만 따로 조회할 필요가 있는지 확인한 뒤 결정한다.
-> - 회원, 비로그인, 나감 및 탈퇴 상태를 어떤 응답 필드로 구분할지 결정한다.
->
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
-
-### TRIP-09 비로그인 참여자 등록
+### TRIP-08 비로그인 참여자 등록
 
 `POST /api/v1/trips/{tripId}/guests`
 
@@ -871,7 +815,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 요청 한 건으로 빈자리 한 개에 비로그인 참여자 한 명을 등록한다. 이름은 필수이며 [여행방 닉네임](../policy/trip.md#여행방-닉네임)으로 사용하므로, 같은 여행의 로그인 참여자나 다른 비로그인 참여자의 여행방 닉네임과 겹칠 수 없다. 여행 참여, 확정과 정원 변경이 동시에 요청돼도 정원을 넘기거나 확정 후 참여자를 추가하지 않는다.
 
-### TRIP-10 비로그인 이름 수정
+### TRIP-09 비로그인 이름 수정
 
 `PATCH /api/v1/trips/{tripId}/guests/{tripMemberId}`
 
@@ -882,11 +826,11 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 #### 인증
 
-여행 확정 전, 로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
-확정 전 여행의 비로그인 참여자 이름을 수정한다.
+비로그인 참여자 이름을 수정한다. 여행 확정 전과 후 모두 수정할 수 있다.
 
 #### 요청
 
@@ -952,13 +896,12 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 > | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 > | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 이름을 수정하려 함 |
 
 #### 처리 규칙
 
-대상은 같은 여행의 비로그인 참여자여야 한다. 바꿀 이름이 같은 여행의 로그인 참여자나 다른 비로그인 참여자의 여행방 닉네임과 겹치면 거절한다([비로그인 참여자 등록](#trip-09-비로그인-참여자-등록)과 같은 규칙).
+대상은 같은 여행의 비로그인 참여자여야 한다. 바꿀 이름이 같은 여행의 로그인 참여자나 다른 비로그인 참여자의 여행방 닉네임과 겹치면 거절한다([비로그인 참여자 등록](#trip-08-비로그인-참여자-등록)과 같은 규칙).
 
-### TRIP-11 비로그인 참여자 삭제
+### TRIP-10 비로그인 참여자 삭제
 
 `DELETE /api/v1/trips/{tripId}/guests/{tripMemberId}`
 
@@ -1012,7 +955,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 ## 확정과 종료 API
 
-### TRIP-12 여행 확정
+### TRIP-11 여행 확정
 
 `POST /api/v1/trips/{tripId}/confirm`
 
@@ -1057,8 +1000,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > {
 >   "data": {
 >     "tripId": "trip-example-a",
->     "status": "CONFIRMED",
->     "membersLockedAt": "2026-11-05T03:00:00Z"
+>     "status": "CONFIRMED"
 >   }
 > }
 > ```
@@ -1069,8 +1011,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > {
 >   "data": {
 >     "tripId": "trip-example-a",
->     "status": "UNCONFIRMED",
->     "membersLockedAt": null
+>     "status": "UNCONFIRMED"
 >   }
 > }
 > ```
@@ -1090,18 +1031,17 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 #### 처리 규칙
 
-빈자리가 0개일 때만 확정한다. 빈자리가 남아 있으면 여행을 바꾸지 않고 확정 전 상태를 반환한다. 이미 확정된 여행은 확정 상태를 유지한 채 그대로 반환하므로, 확정 응답을 받지 못해 다시 요청해도 같은 결과를 받는다.
+빈자리가 0개일 때만 확정한다. 빈자리가 남아 있으면 여행을 바꾸지 않고 확정 전 상태를 반환한다. 이미 확정된 여행은 확정 상태를 유지한 채 그대로 반환하므로, 확정 응답을 받지 못해 다시 요청해도 같은 결과를 받는다. 확정할 때 확정 상태 값과 함께 확정 시각을 저장하며, 확정 시각은 응답에 제공하지 않는다.
 
 앱이 확정 버튼을 비활성화해도 서버는 확정 조건을 다시 확인한다. 앱은 응답의 `status`를 기준으로 확정 버튼을 막아 사용자가 확정 요청을 다시 보내지 않게 한다. 확정 후 모집으로 되돌리지 않는다. 참여자 일괄 등록을 이 요청에 포함하지 않는다.
 
 > 논의 필요
 >
-> - 확정 상태를 상태 값으로 관리하면 확정 시각(`members_locked_at`)을 따로 저장하지 않아도 된다. 상태 값과 확정 시각을 모두 저장할지, 확정 시각을 삭제할지 결정한다. [TripConfirmation](#tripconfirmation)의 `membersLockedAt` 제공 여부도 이 결정을 따른다.
 > - 확정 요청을 처리하는 동안 다른 사용자의 참여처럼 인원이 바뀌는 요청이 함께 들어오는 예외 상황의 처리를 정한다. 정원과 확정 조건을 위반하지 않아야 한다는 기준은 [동시 참여와 재시도](../policy/trip.md#동시-참여와-재시도)를 따른다.
 >
 > 출처: [정책](../policy/trip.md#확정-조건) | 기존 검토 DDL `trip.sql`
 
-### TRIP-13 여행 나가기
+### TRIP-12 여행 나가기
 
 `POST /api/v1/trips/{tripId}/leave`
 
@@ -1157,7 +1097,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
-### TRIP-14 여행 삭제
+### TRIP-13 여행 삭제
 
 `DELETE /api/v1/trips/{tripId}`
 
@@ -1234,7 +1174,8 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | --- | --- | --- | --- | --- |
 > | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 > | `name` | String | 아니요 | 항상 | 여행명. |
-> | `countryCode` | String | 아니요 | 항상 | 대표 국가. 한국 `KR`, 일본 `JP`, 미국 `US`, 중국 `CN`, 유럽 `EU`. 기타 국가의 표현은 아래 논의 사항을 따른다. |
+> | `countryCode` | String | 아니요 | 항상 | 대표 국가. 한국 `KR`, 일본 `JP`, 미국 `US`, 중국 `CN`, 유럽 `EU`, 기타 `ETC`. |
+> | `customCountryName` | String | 예 | 항상 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`가 아니면 null. |
 > | `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
 > | `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 종료일. |
 > | `baseCurrency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
@@ -1242,11 +1183,8 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | `registeredMemberCount` | Integer | 아니요 | 항상 | 회원과 비로그인 참여자의 합. 빈자리 제외. |
 > | `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후. |
 > | `myRole` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
->
-> - 확정 시각을 함께 제공할지는 [여행 확정](#trip-12-여행-확정)의 논의 사항을 따른다.
-> - 기타 국가의 텍스트를 `countryCode`에 담을지, 별도 필드를 둘지 결정한다.
 
-여행 확정 상태는 확정 시각(`membersLockedAt`) 대신 상태 값(`status`)으로 관리한다. 기타 국가는 국가 코드로 바꾸지 않고 입력한 텍스트를 그대로 저장한다. 역할 값은 `ADMIN`과 `MEMBER`다.
+여행 확정 상태는 상태 값(`status`)으로 관리한다. 기타 국가는 `countryCode`를 `ETC`로 두고, 사용자가 입력한 국가명을 국가 코드로 바꾸지 않고 `customCountryName`에 그대로 담는다. 역할 값은 `ADMIN`과 `MEMBER`다.
 
 ### TripListItem
 
@@ -1256,7 +1194,8 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 | `name` | String | 아니요 | 항상 | 여행명. |
-| `countryCode` | String | 아니요 | 항상 | 대표 국가. 한국 `KR`, 일본 `JP`, 미국 `US`, 중국 `CN`, 유럽 `EU`. 기타 국가의 표현은 [TripSummary](#tripsummary)의 논의 사항을 따른다. |
+| `countryCode` | String | 아니요 | 항상 | 대표 국가. 한국 `KR`, 일본 `JP`, 미국 `US`, 중국 `CN`, 유럽 `EU`, 기타 `ETC`. |
+| `customCountryName` | String | 예 | 항상 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`가 아니면 null. |
 | `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
 | `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 종료일. |
 | `memberCapacity` | Integer | 아니요 | 항상 | 총 정원, 1~10명. |
@@ -1275,7 +1214,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 미참여 빈자리, 관리자, 로그인 참여자, 비로그인 참여자 순. 상태 구분과 빈자리 표현은 별도 확정 |
+> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 미참여 빈자리, 관리자, 로그인 참여자, 비로그인 참여자 순. 참여자 상태는 `MEMBER`, `GUEST`, `LEFT`, `WITHDRAWN`으로 구분하며, 빈자리 표현은 별도 확정 |
 
 ### TripCreate
 
@@ -1285,8 +1224,9 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 > | --- | --- | --- | --- | --- |
-> | `name` | String | 필수 | 없음 | 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. |
-> | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU` 중 하나 또는 기타 국가. 기타 국가의 표현은 [TripSummary](#tripsummary)의 논의 사항을 따른다. |
+> | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. |
+> | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 최대 길이는 [ERD 변경 목록](../design/erd-changes.md#반영할-변경)의 논의 사항을 따른다. |
 > | `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 > | `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
 > | `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
@@ -1388,7 +1328,6 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | --- | --- | --- | --- | --- |
 > | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 > | `status` | String | 아니요 | 항상 | 요청을 처리한 뒤의 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후([TripSummary](#tripsummary)의 `status`와 같은 값). |
-> | `membersLockedAt` | String | 예 | 항상 | ISO 8601 UTC. 여행 확정 시각이며 확정 전이면 null. 제공 여부는 [여행 확정](#trip-12-여행-확정)의 논의 사항을 따른다. |
 
 ## 오류 코드
 
