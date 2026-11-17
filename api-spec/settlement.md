@@ -882,7 +882,7 @@
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
 | `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
-| `tripMemberId` | String | 필수 | 없음 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+| `tripMemberId` | String | 필수 | 없음 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 
 요청 Body는 보내지 않는다.
 
@@ -1460,7 +1460,7 @@
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 > | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 > | `paidAmount` | String | 아니요 | 항상 | 해당 참여자의 결제 합계. 소수점 이하 2자리 문자열로 전달한다. |
 > | `shareAmount` | String | 아니요 | 항상 | 해당 참여자의 부담 합계. 소수점 이하 2자리 문자열로 전달한다. |
@@ -1544,7 +1544,7 @@
 > | `expenseCount` | Integer | 아니요 | 항상 | 포함 지출 건수. |
 > | `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 정산 확정과 발행 시각. |
 > | `totals` | Array&lt;[CurrencyTotal](#currencytotal)&gt; | 아니요 | 항상 | 통화별 총액. |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 > | `balances` | Array&lt;[Balance](#balance)&gt; | 아니요 | 항상 | 해당 참여자의 결제액과 부담액 및 잔액. |
 > | `transfers` | Array&lt;[Transfer](#transfer)&gt; | 아니요 | 항상 | 해당 참여자가 보내거나 받는 관계. |
 > | `expenses` | Array&lt;[StatementExpense](#statementexpense)&gt; | 아니요 | 항상 | 결제 날짜 오름차순, 동률 지출 ID 기준 제안. |
@@ -1580,7 +1580,7 @@
 > | `expenseCount` | Integer | 아니요 | 항상 | 포함 지출 건수. |
 > | `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 정산 확정과 발행 시각. |
 > | `totals` | Array&lt;[CurrencyTotal](#currencytotal)&gt; | 아니요 | 항상 | 통화별 총액. |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 
 ### ReceiptConfirmation
 

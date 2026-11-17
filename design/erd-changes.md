@@ -8,10 +8,11 @@
 | --- | --- | --- | --- |
 | `trip_member.guest_name` | `VARCHAR(10)`, 비로그인 참여자 이름. `UNIQUE (trip_id, guest_name)` | 로그인 참여자의 여행방 닉네임도 함께 저장하고 기존 제약 유지 | 로그인 참여자와 비로그인 참여자 모두의 여행방 닉네임을 저장한다. 같은 여행에서는 로그인 여부와 관계없이 이름 중복을 금지하며 비로그인 참여자 등록, 이름 수정과 여행 참여에 모두 적용한다. |
 | `trip.members_locked_at` | `TIMESTAMPTZ NULL`, NULL이면 참여자 초대 중 | 여행 확정 여부를 `status` 컬럼으로 관리하고, 확정 시각은 `confirmed_at`으로 이름을 바꿔 함께 저장 | `status` 컬럼으로 관리하며, API에서는 `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후)로 전달한다. 확정 시각도 `confirmed_at`으로 함께 저장한다. |
-| `trip.country_code` | `CHAR(2) NOT NULL` | 대표 국가 필수 유지. 기타 국가는 입력한 텍스트 그대로 저장 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. 최대 길이와 기타 국가일 때 `country_code`에 저장할 값은 논의 필요. |
+| `trip.country_code` | `CHAR(2) NOT NULL` | `VARCHAR(3) NOT NULL`로 변경. 대표 국가 필수 유지. 기타 국가는 `ETC`를 저장하고 입력한 텍스트는 그대로 저장 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. 기타 국가이면 `country_code`에 API 값과 같은 `ETC`를 저장하고, 세 글자를 담도록 `country_code`를 `VARCHAR(3)`으로 바꾼다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. `custom_country_name`의 최대 길이는 논의 필요. |
 | `trip_member.role` | `OWNER`, `MEMBER` | `OWNER`를 `ADMIN`으로 변경 | 역할 값 `ADMIN`, `MEMBER` 확정. |
 | 참여자 상태 | 컬럼 없음. `member_id`와 `guest_name` 값으로 구분 | `trip_member`에 참여자 상태 enum 컬럼 `trip_member_status` 추가 | `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원)으로 관리한다. 여행에 참여할 때 `member_id`가 있는지 보고 상태를 정하고, 다른 기능은 이 값으로 구분한다. |
 | 회원 중복 참여 | `UNIQUE (trip_id, guest_name)`만 있고 같은 회원의 중복 참여를 막는 제약은 없음 | `UNIQUE (trip_id, member_id)` 추가 | 같은 회원이 한 여행에 두 번 참여하지 않게 한다. 나간 시각(`left_at`) 논의가 끝난 뒤 `left_at`과 함께 마이그레이션에 추가한다. |
+| `trip_member` 행 생성 시점 | 자리마다 행을 미리 만들고, `member_id`와 `guest_name`이 모두 NULL인 행을 빈자리로 둔다 | 빈자리 행을 미리 만들지 않고, 참여나 비로그인 추가 때 행 생성 | 로그인 참여자가 참여하거나 관리자가 비로그인 참여자를 추가할 때 행을 만든다. 비로그인 참여자를 삭제하면 그 행을 지우고, 총인원을 바꿔도 행을 만들거나 지우지 않는다. 빈자리 수는 총인원에서 등록된 참여자 수를 빼서 계산한다([총인원과 빈자리](../policy/trip.md#총인원과-빈자리)). 정원 초과를 막는 방식은 [여행 참여](../api-spec/trip.md#trip-07-여행-참여)의 논의 사항을 따른다. |
 | `member.nickname` | `UNIQUE (nickname)` | UNIQUE 제약 제거 | 계정 닉네임 중복 허용 확정. 여행방에서는 [여행방 닉네임](../policy/trip.md#여행방-닉네임)을 사용한다. |
 | `member.name`, `member.age` | `name VARCHAR(50)`, `age INTEGER`, NULL이면 미입력 | 두 컬럼 삭제 | 가입할 때 이름과 나이를 입력받지 않아 사용하지 않는다([선택 정보](../policy/user.md#선택-정보)). |
 | 여행 생성 고유키 | 없음 | `trip.idempotency_key UUID` 추가, 키 단독 UNIQUE | 여행 생성에만 사용하고 만료 없이 여행과 함께 보관한다. 여행과 같은 트랜잭션에 저장하며 키 단독 UNIQUE 제약을 둔다([여행 생성 멱등성](idempotency.md#여행-생성-멱등성)). |
@@ -23,12 +24,11 @@
 
 `trip`, `trip_member`와 `member`의 기존 값은 백엔드 `develop`의 초기 마이그레이션 `V20261107063430__create_initial_schema.sql`(커밋 `c857020`)에서 확인했다.
 
-같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다. 로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로, 백엔드 Flyway 마이그레이션의 `guest_name` 주석을 여행방 닉네임 기준으로 고쳐야 한다. 같은 주석의 '여행 시작 전 수정 가능'도 여행 확정 전과 후 모두 수정할 수 있는 기준으로 고쳐야 한다([비로그인 참여자](../policy/trip.md#비로그인-참여자)).
+같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다. 로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로, 백엔드 Flyway 마이그레이션의 `guest_name` 주석을 여행방 닉네임 기준으로 고쳐야 한다. 같은 주석의 '여행 시작 전 수정 가능'도 여행 확정 전과 후 모두 수정할 수 있는 기준으로 고쳐야 한다([비로그인 참여자](../policy/trip.md#비로그인-참여자)). 빈자리 행을 만들지 않으므로 `trip_member`의 '자리'와 '빈자리' 주석도 함께 고쳐야 한다.
 
 > 논의 필요
 >
 > - `custom_country_name`의 최대 길이를 정한다.
-> - 기타 국가를 고르면 `country_code`에 저장할 값을 정한다. API 값 `ETC`는 세 글자라 지금 타입(`CHAR(2)`)에 담을 수 없다.
 > - 나간 회원의 상태와 과거 기록을 남겨야 하지만 `trip_member`에는 나간 시각이 없다. Notion 검토 이력은 나간 시각(`left_at`)으로 구분하고 같은 회원은 기존 참여 ID를 다시 쓰는 방향이다. `left_at` 추가 여부를 정한다. 재참여 기준은 [재참여](../policy/trip.md#재참여)를 따른다.
 
 ## 추가 컬럼 후보
@@ -110,7 +110,7 @@
 
 ### 예시: 여행방 닉네임이 이미 등록된 경우
 
-같은 여행의 `trip_member` 21에 `guest_name = 민수`가 있다면, 22에 민수를 다시 등록하는 요청은 거절한다. 다른 비회원 이름을 민수로 수정하려는 요청과 회원이 여행방 닉네임 민수로 참여하려는 요청도 같은 제약을 적용한다. 요청이 동시에 들어와도 기존 `(trip_id, guest_name)` UNIQUE로 같은 이름이 둘 다 저장되지 않게 한다.
+같은 여행의 `trip_member` 21에 `guest_name = 민수`가 있다면, 민수를 다시 등록하는 요청은 거절한다. 다른 비회원 이름을 민수로 수정하려는 요청과 회원이 여행방 닉네임 민수로 참여하려는 요청도 같은 제약을 적용한다. 요청이 동시에 들어와도 기존 `(trip_id, guest_name)` UNIQUE로 같은 이름이 둘 다 저장되지 않게 한다.
 
 로그인 참여자의 여행방 닉네임도 `guest_name`에 저장하므로, 기존 복합 UNIQUE 하나로 회원과 비회원 사이의 이름 중복까지 막는다. 회원이 계정 닉네임(`member.nickname`)을 바꿔도 `guest_name`은 바뀌지 않는다.
 

@@ -268,7 +268,6 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 > 논의 필요
 >
-> - 여행명에 공백만 입력한 경우의 검증을 결정한다.
 > - 같은 키의 요청이 동시에 왔을 때 늦게 처리된 요청의 응답과 `trip`에 생성자 컬럼을 추가할지는 [여행 생성 멱등성](../design/idempotency.md#여행-생성-멱등성)의 논의 사항을 따른다.
 >
 > 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
@@ -332,21 +331,21 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >         "memberId": "member-example-a",
 >         "displayName": "민지",
 >         "role": "ADMIN",
->         "isVacant": false
+>         "shareAmountKrw": "0.00"
 >       },
 >       {
 >         "tripMemberId": "participant-example-b",
 >         "memberId": "member-example-b",
 >         "displayName": "지훈",
 >         "role": "MEMBER",
->         "isVacant": false
+>         "shareAmountKrw": "0.00"
 >       },
 >       {
 >         "tripMemberId": "participant-example-c",
 >         "memberId": null,
 >         "displayName": "서연",
 >         "role": "MEMBER",
->         "isVacant": false
+>         "shareAmountKrw": "0.00"
 >       }
 >     ]
 >   }
@@ -370,15 +369,9 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 여행 종료일이 지나도 조회 가능하다. 삭제와 생성자 탈퇴로 차단된 여행은 진입을 차단한다.
 
-참여자 목록은 미참여 빈자리, 관리자, 로그인 참여자(참여한 순서), 비로그인 참여자(관리자가 추가한 순서) 순으로 제공한다. 참여자별 부담액은 참여자 목록의 각 참여자([Participant](#participant))에 담는다. 부담액은 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다([여행 조회](../policy/trip.md#여행-조회)와 같은 규칙).
+참여자 목록은 관리자, 로그인 참여자(참여한 순서), 비로그인 참여자(관리자가 추가한 순서) 순으로 제공한다. 빈자리는 목록에 넣지 않는다. 앱은 총인원(`memberCapacity`)에서 등록 인원(`registeredMemberCount`)을 뺀 수만큼 빈자리를 목록 맨 위에 표시한다. 참여자별 부담액은 참여자 목록의 각 참여자([Participant](#participant))의 `shareAmountKrw`에 담는다. 부담액은 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다([여행 조회](../policy/trip.md#여행-조회)와 같은 규칙).
 
-참여자 목록만 조회하는 API는 따로 두지 않는다. 빈자리를 부담자로 제공하지 않는다. 참여자 상태는 `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) 네 값으로 구분한다.
-
-> 논의 필요
->
-> - 참여자별 부담액을 담을 응답 필드의 이름과 빈자리의 응답 표현을 결정한다.
->
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+참여자 목록만 조회하는 API는 따로 두지 않는다. 참여자 상태는 `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) 네 값으로 구분한다.
 
 ### TRIP-04 여행 정보 수정
 
@@ -417,7 +410,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >
 > | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 > | --- | --- | --- | --- | --- |
-> | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
+> | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
 > | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
 > | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
 > | `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
@@ -839,7 +832,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `tripMemberId` | String | 필수 | 없음 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+| `tripMemberId` | String | 필수 | 없음 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 
 ##### Body
 
@@ -1214,7 +1207,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 미참여 빈자리, 관리자, 로그인 참여자, 비로그인 참여자 순. 참여자 상태는 `MEMBER`, `GUEST`, `LEFT`, `WITHDRAWN`으로 구분하며, 빈자리 표현은 별도 확정 |
+> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자 순. 빈자리는 넣지 않는다. 참여자 상태는 `MEMBER`, `GUEST`, `LEFT`, `WITHDRAWN`으로 구분한다. |
 
 ### TripCreate
 
@@ -1224,7 +1217,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 > | --- | --- | --- | --- | --- |
-> | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. |
+> | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다. |
 > | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
 > | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 최대 길이는 [ERD 변경 목록](../design/erd-changes.md#반영할-변경)의 논의 사항을 따른다. |
 > | `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
@@ -1281,7 +1274,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
 > | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 
 ### Participant
 
@@ -1291,11 +1284,11 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
-> | `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자와 빈자리이면 null이며, 탈퇴 회원의 값은 보존 정책에 따라 결정한다. |
-> | `displayName` | String | 예 | 항상 | 참여자의 여행방 닉네임. 빈자리이면 null. 이름을 식별자로 사용하지 않는다. |
+> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
+> | `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자이면 null이며, 탈퇴 회원의 값은 보존 정책에 따라 결정한다. |
+> | `displayName` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 이름을 식별자로 사용하지 않는다. |
 > | `role` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
-> | `isVacant` | Boolean | 아니요 | 항상 | 아무 참여자도 배정되지 않은 자리이면 true. |
+> | `shareAmountKrw` | String | 아니요 | 항상 | 참여자별 부담액. 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다. 소수점 이하 2자리 문자열로 전달한다. |
 
 ### GuestInput
 
@@ -1315,7 +1308,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자 및 빈자리를 구분하는 ID다. |
+> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 > | `name` | String | 아니요 | 항상 | 등록된 비로그인 이름. |
 
 ### TripConfirmation
