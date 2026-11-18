@@ -19,7 +19,7 @@
 | 3 | 토큰 갱신과 로그아웃 | [Billit-5th-Server PR #32](https://github.com/JECT-Study/Billit-5th-Server/pull/32) | `develop` 병합 |
 | 4 | Apple 소셜 로그인과 연결 해제 토큰 | [Billit-5th-Server PR #33](https://github.com/JECT-Study/Billit-5th-Server/pull/33) | `develop` 병합 |
 | 5 | 가입 정보 조회, 닉네임 확인과 가입 완료 | [Billit-5th-Server PR #34](https://github.com/JECT-Study/Billit-5th-Server/pull/34) | `develop` 병합 |
-| 6 | 닉네임 선택 입력과 임의 닉네임 부여 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | 초안(Draft), 이 문서와 Docs 이슈 #5 정리 후 리뷰 |
+| 6 | 가입 시 임의 닉네임 부여, 닉네임 중복 확인 제거 | [Billit-5th-Server PR #43](https://github.com/JECT-Study/Billit-5th-Server/pull/43) | `develop` 병합(닉네임 단어는 임시, [Docs 이슈 #5](https://github.com/JECT-Study/Billit-5th-Docs/issues/5)에서 결정) |
 
 ## 토큰 종류와 검증
 
@@ -101,7 +101,7 @@ Apple로 가입한 회원이 탈퇴하면 Apple에서 발급한 토큰을 폐기
 
 Apple 인가 코드는 한 번만 교환할 수 있다. 로그인 응답을 받지 못하면 앱은 Apple 인증부터 다시 진행해 새 인가 코드를 받는다. 서버도 같은 코드의 교환을 자동으로 재시도하지 않는다.
 
-Apple은 사용자 이름을 최초 권한 부여 때만 주므로, 서버는 받은 `fullName`을 `member.social_display_name`에 저장한다. Google은 ID 토큰의 `name`, Kakao는 `nickname`을 같은 컬럼에 저장한다. 닉네임을 입력하지 않으면 임의 닉네임을 부여하기로 해서, 이 값은 Apple을 포함해 닉네임 초기값으로 쓰지 않는다(BE 논의). 저장을 계속할지는 [USER-01 논의 필요](../api-spec/user.md#user-01-가입-정보-조회)에서 정한다.
+Apple은 사용자 이름을 최초 권한 부여 때만 주므로, 서버는 받은 `fullName`을 `member.social_display_name`에 저장한다. Google은 ID 토큰의 `name`, Kakao는 `nickname`을 같은 컬럼에 저장한다. 가입할 때 닉네임을 받지 않고 임의 닉네임을 부여하므로, 이 값은 Apple을 포함해 닉네임 초기값으로 쓰지 않는다(BE 논의). 저장을 계속할지는 [USER-01 논의 필요](../api-spec/user.md#user-01-가입-정보-조회)에서 정한다.
 
 > 논의 필요
 >
