@@ -416,7 +416,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 > | --- | --- | --- | --- | --- |
 > | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
 > | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수. 공백을 제외하고 최대 10자, 한글과 영문 허용. 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
 > | `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
 > | `startDate` | String | 선택 | 없음 | YYYY-MM-DD. 여행 시작일. `null` 불가. |
 > | `endDate` | String | 선택 | 없음 | YYYY-MM-DD, 여행 시작일 이상. `null` 불가. |
@@ -714,14 +714,13 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 #### 처리 규칙
 
-이미 참여 중인 본인은 추가 등록 없이 기존 tripId와 tripMemberId를 반환한다. 참여 성공 응답을 받지 못해 재요청해도 같은 참여 정보를 200으로 반환한다. 이 재요청 응답은 현재 참여 중인 회원에게 적용하며, 나간 뒤 재참여하는 경우의 참여 ID 재사용 여부와 구분한다. 신규 참여는 여행 유효성, 확정 여부, 빈자리와 여행방 닉네임 중복을 재검증한다. 여행 종료일이 지났더라도 확정 전이면 참여할 수 있다([참여 조건](../policy/trip.md#참여-조건)과 같은 규칙). 동시 요청으로 중복 참여와 정원 초과를 만들지 않는다. 같은 회원의 중복 참여는 `(trip_id, member_id)` UNIQUE 제약으로 막는다([ERD 변경 목록](../design/erd-changes.md#반영할-변경)).
+이미 참여 중인 본인은 추가 등록 없이 기존 tripId와 tripMemberId를 반환한다. 참여 성공 응답을 받지 못해 재요청해도 같은 참여 정보를 200으로 반환한다. 나간 회원이 확정 전에 다시 참여하면 새 참여 정보를 만들지 않고 나가기 전의 `tripMemberId`를 다시 쓰며, 여행방 닉네임도 나가기 전에 쓰던 닉네임을 그대로 쓴다([재참여](../policy/trip.md#재참여)와 같은 규칙). 신규 참여는 여행 유효성, 확정 여부, 빈자리와 여행방 닉네임 중복을 재검증한다. 여행 종료일이 지났더라도 확정 전이면 참여할 수 있다([참여 조건](../policy/trip.md#참여-조건)과 같은 규칙). 동시 요청으로 중복 참여와 정원 초과를 만들지 않는다. 같은 회원의 중복 참여는 `(trip_id, member_id)` UNIQUE 제약으로 막는다([ERD 변경 목록](../design/erd-changes.md#반영할-변경)).
 
 서버는 초대 코드의 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 신규 참여자가 입력한 여행방 닉네임이 같은 여행의 로그인 참여자나 비로그인 참여자의 여행방 닉네임과 같으면 참여를 거절한다. 같은 이름의 비로그인 참여자 때문에 거절됐다면 관리자가 [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)로 그 참여자를 삭제한 뒤 참여할 수 있다.
 
 > 논의 필요
 >
 > - 동시 요청에서 정원 초과를 막는 트랜잭션 방식을 결정한다.
-> - 확정 전 재참여 시 기존 참여 ID 재사용 여부를 결정한다.
 >
 > 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
@@ -1090,7 +1089,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 > 논의 필요
 >
-> - 미정산 건수와 영향 조회 방식, 재참여 ID를 결정한다.
+> - 미정산 건수와 영향 조회 방식을 결정한다.
 >
 > 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
@@ -1211,7 +1210,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자 순. 빈자리는 넣지 않는다. 참여자 상태는 `MEMBER`, `GUEST`, `LEFT`, `WITHDRAWN`으로 구분한다. |
+> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자 순. 빈자리는 넣지 않는다. |
 
 ### TripCreate
 
@@ -1223,7 +1222,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | --- | --- | --- | --- | --- |
 > | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다. |
 > | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 공백을 제외하고 최대 10자, 한글과 영문 허용. 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). |
 > | `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 > | `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
 > | `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
