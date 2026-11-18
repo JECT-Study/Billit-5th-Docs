@@ -34,6 +34,8 @@ Google, Apple, Kakao 소셜 로그인, Access Token 갱신과 현재 기기 로�
 
 `POST /api/v1/auth/social-logins`
 
+이 경로는 백엔드 OpenAPI의 [`socialLogin`](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/src/main/resources/api-docs/domains/auth.yml)에 반영돼 있다.
+
 #### 인증
 
 Billit Access Token은 보내지 않는다. 서버는 소셜 제공자의 공개키로 ID 토큰의 서명을 검증하고 발급자, 발급 대상, 만료 시간과 사용자 식별자를 확인한다.
@@ -84,26 +86,19 @@ HTTP `200 OK`와 `data`를 반환한다.
 
 Apple 로그인 응답을 받지 못하면 앱은 소셜 인증을 다시 진행해 새 `authorizationCode`를 받는다. 앱은 같은 코드로 로그인 요청을 자동 재시도하지 않으며, 서버도 같은 코드의 교환을 자동 재시도하지 않는다.
 
-> 논의 필요
->
-> Google과 Kakao 로그인 응답을 받지 못했을 때, 같은 `idToken`으로 재요청을 허용할지 정한다. 재요청 허용 여부는 `nonce` 검증과 일회용 처리 방식과 함께 결정한다.
-
-응답 유실 복구를 위해 이전 로그인 결과를 재전달하지 않는다.
+응답 유실 복구를 위해 이전 로그인 결과를 재전달하지 않는다. 현재 구현은 Google과 Kakao의 ID 토큰을 일회용으로 처리하지 않는다. 로그인 응답을 받지 못한 앱이 같은 `idToken`으로 다시 요청하면, 서버는 토큰이 만료되기 전까지 처음 요청과 같은 방식으로 검증하고 로그인 결과를 새로 발급한다. 코드 확인 기준은 [Billit-5th-Server `bd8d21f`](https://github.com/JECT-Study/Billit-5th-Server/tree/bd8d21f3b0ce289cedee201ec10a3cfbc21b863b)다.
 
 > 논의 필요
 >
-> - 제공자별 ID 토큰 획득과 검증의 세부 조건, Apple 인가 코드 교환에 필요한 추가 조건을 확정한다.
-> - 가입 전용 토큰의 형식을 정한다.
-> 출처: [인증 정책](../policy/authentication.md), [가입 완료 조건](../policy/user.md#가입-완료-조건)
+> 같은 `idToken`의 재요청을 막으려면 `nonce` 검증이나 일회용 처리를 추가하고 앱과 서버를 함께 변경해야 한다. 1차 MVP에 도입할지 정한다.
+
+ID 토큰의 검증 조건과 제공자별 발급 대상은 [소셜 로그인 설계](../design/authentication.md#소셜-로그인)를, Apple 인가 코드 교환은 [Apple 연결 해제 토큰 설계](../design/authentication.md#apple-연결-해제-토큰)를 따른다. 가입 전용 토큰의 형식과 유효 기간은 [토큰 종류와 검증](../design/authentication.md#토큰-종류와-검증)과 [가입 전용 토큰 설계](../design/registration-token.md)를 따른다.
 
 ### AUTH-02 Access Token 갱신
 
 `POST /api/v1/auth/token-refreshes`
 
-> 논의 필요
->
-> 최종 경로는 별도로 확정한다. Refresh Token은 갱신 시 회전한다.
-> 출처: [인증 유지 정책](../policy/authentication.md#인증-유지)
+이 경로는 백엔드 OpenAPI의 [`refreshTokens`](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/src/main/resources/api-docs/domains/auth.yml)에 반영돼 있다.
 
 #### 인증
 
@@ -161,10 +156,7 @@ MVP에서는 기기 식별자를 기준으로 Refresh Token을 저장하지 않�
 
 `POST /api/v1/auth/logout`
 
-> 논의 필요
->
-> 최종 경로와 현재 기기의 인증 식별 및 차단 구현 방식을 확정해야 한다.
-> 출처: [로그아웃 정책](../policy/authentication.md#로그아웃)
+이 경로는 백엔드 OpenAPI의 [`logout`](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/src/main/resources/api-docs/domains/auth.yml)에 반영돼 있다.
 
 #### 인증
 
@@ -217,10 +209,7 @@ HTTP `204 No Content`를 반환한다. 응답 본문은 없다.
 
 로그아웃해도 회원 계정과 여행의 지출 및 정산 기록은 유지한다. 다른 기기의 로그인 상태를 함께 해제하지 않는다.
 
-> 논의 필요
->
-> 로그인 세션에 속한 토큰의 식별 방법, Access Token 즉시 차단과 Refresh Token 폐기의 저장 구조 및 동시 갱신과 로그아웃의 경합 처리를 결정한다.
-> 출처: [로그아웃 정책](../policy/authentication.md#로그아웃)
+서버는 Access Token과 Refresh Token에 담긴 로그인 세션 ID로 세션을 찾아 종료 시각을 기록한다. 같은 세션의 갱신과 로그아웃이 동시에 들어오면 서버는 세션 버전으로 충돌을 감지한다. 세션의 저장 구조는 [로그인 세션 저장](../design/authentication.md#로그인-세션-저장)을, 로그아웃 처리는 [로그아웃 설계](../design/authentication.md#로그아웃)를 따른다.
 
 ## 클라이언트 처리 범위
 
