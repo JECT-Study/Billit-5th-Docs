@@ -416,7 +416,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 > | --- | --- | --- | --- | --- |
 > | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
 > | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수. 공백을 제외하고 최대 10자, 한글과 영문 허용. 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
 > | `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
 > | `startDate` | String | 선택 | 없음 | YYYY-MM-DD. 여행 시작일. `null` 불가. |
 > | `endDate` | String | 선택 | 없음 | YYYY-MM-DD, 여행 시작일 이상. `null` 불가. |
@@ -1086,7 +1086,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 #### 처리 규칙
 
-미정산 지출이 있어도 일반 회원의 나가기를 허용한다. 앱이 관리자의 나가기 버튼을 비활성화해도 서버는 요청자의 역할을 다시 확인해 관리자의 나가기 요청을 거절한다. 영향 안내 데이터의 별도 조회 여부는 미정이다. 나가기 전에 발행된 정산은 수령 확인 여부와 관계없이 내 공간에서 계속 조회할 수 있고, 나간 뒤 새로 시작하는 정산의 금액 계산과 송금 관계에서는 나간 회원을 제외한다([나가기와 기록 유지](../policy/trip.md#나가기와-기록-유지)와 같은 규칙).
+미정산 지출이 있어도 일반 회원의 나가기를 허용한다. 앱이 관리자의 나가기 버튼을 비활성화해도 서버는 요청자의 역할을 다시 확인해 관리자의 나가기 요청을 거절한다. 영향 안내 데이터의 별도 조회 여부는 미정이다. 나간 회원은 나가기 전과 후 언제 정산하든 자신이 포함된 지출의 정산에 포함되며, 정산이 발행되면 내 공간에서 조회할 수 있다. 나간 회원이 수령인인 미확인 송금 관계는 수령 확인 불가로 표시한다([나가기와 기록 유지](../policy/trip.md#나가기와-기록-유지)와 같은 규칙).
 
 > 논의 필요
 >
@@ -1223,7 +1223,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | --- | --- | --- | --- | --- |
 > | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다. |
 > | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 공백을 제외하고 최대 10자([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 공백을 제외하고 최대 10자, 한글과 영문 허용. 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). |
 > | `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 > | `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
 > | `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
