@@ -261,7 +261,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >
 > | HTTP | 코드 | 조건 |
 > | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`인데 누락한 경우도 포함 |
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 
 #### 처리 규칙
@@ -272,6 +272,8 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 > 논의 필요
 >
+> - 검토 제안: `countryCode`가 `ETC`일 때만 `customCountryName`을 필수로 받으며, `countryCode`가 `ETC`가 아니면 `customCountryName`을 생략해야 한다.
+> `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다(`null` 불가).
 > - 같은 키의 요청이 동시에 왔을 때 늦게 처리된 요청의 응답과 `trip`에 생성자 컬럼을 추가할지는 [여행 생성 멱등성](../design/idempotency.md#여행-생성-멱등성)의 논의 사항을 따른다.
 >
 > 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
@@ -416,7 +418,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 > | --- | --- | --- | --- | --- |
 > | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
 > | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수이며, 기존 여행의 대표 국가가 `ETC`이면 `customCountryName`만 단독으로 수정할 수 있다. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). `null` 불가. |
 > | `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
 > | `startDate` | String | 선택 | 없음 | YYYY-MM-DD. 여행 시작일. `null` 불가. |
 > | `endDate` | String | 선택 | 없음 | YYYY-MM-DD, 여행 시작일 이상. `null` 불가. |
@@ -473,7 +475,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >
 > | HTTP | 코드 | 조건 |
 > | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음 |
+> | 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`로 바꾸면서 누락한 경우도 포함 |
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 > | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 > | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
@@ -482,6 +484,12 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 #### 처리 규칙
 
 확정 후 정원 변경은 금지한다. 등록 인원보다 줄일 수 없다. 앱이 확정 후 정원 입력을 비활성화해도 서버는 확정 여부와 등록 인원을 다시 확인해 조건에 맞지 않는 변경을 거절한다. 기존 지출과 정산에 소급 반영하지 않는다.
+
+> 논의 필요
+>
+> - 검토 제안: 요청에 일부 필드만 보낸 경우 저장된 여행 정보와 합친 뒤 `countryCode`와 `customCountryName`의 조합을 검증한다.
+> 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다.
+> 대표 국가를 `ETC`에서 다른 국가로 바꾸면 `customCountryName`은 생략하며, 서버는 기존에 저장된 기타 국가명을 비운다(`null`).
 
 ## 초대와 참여자 API
 
@@ -1222,7 +1230,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | --- | --- | --- | --- | --- |
 > | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다. |
 > | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). |
+> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수이며, `ETC`가 아니면 생략한다. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). `null` 불가. |
 > | `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 > | `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
 > | `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
