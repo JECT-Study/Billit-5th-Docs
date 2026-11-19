@@ -61,7 +61,6 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
 | `status` | String | 아니요 | 항상 | 가입 미완료 상태인 `SIGNING_UP`을 반환한다. |
-| `socialDisplayName` | String | 예 | 항상 | 소셜 제공자가 준 표시 이름. 제공값이 없으면 `null`. 닉네임 초기값으로 쓰지 않는다(아래 논의 필요). |
 | `terms` | Array&lt;RegistrationTerms&gt; | 아니요 | 항상 | 가입 화면에서 표시할 필수 및 선택 약관 목록. |
 
 **RegistrationTerms**
@@ -77,7 +76,6 @@ HTTP `200 OK`를 반환한다.
 {
   "data": {
     "status": "SIGNING_UP",
-    "socialDisplayName": "김빌릿",
     "terms": [
       {
         "termsId": "1",
@@ -101,14 +99,10 @@ HTTP `200 OK`를 반환한다.
 
 #### 처리 규칙
 
-가입 중 사용자 본인 정보만 제공한다. `socialDisplayName`은 Google ID 토큰의 `name`, Kakao ID 토큰의 `nickname`, Apple 로그인 요청의 `fullName`에서 가져온다. 제공값이 없으면 `null`을 반환한다.
+가입 중 사용자 본인만 조회할 수 있다.
+소셜 표시 이름(Google `name`, Kakao `nickname`, Apple `fullName`)은 저장하지도, 응답하지도 않는다.
+가입할 때 닉네임을 받지 않고 서비스가 임의 닉네임을 부여하므로 쓰는 곳이 없기 때문이다.
 
-가입할 때 닉네임을 받지 않고 서비스가 임의 닉네임을 부여하므로, 소셜 표시 이름을 닉네임 초기값으로 쓰지 않는다. Apple `fullName`도 같다(BE 논의).
-
-> 논의 필요
->
-> - 닉네임 초기값으로 쓰지 않으므로 `socialDisplayName`을 응답할 이유가 없다. 응답에서 빼고 `member.social_display_name` 저장도 중단할지 정한다(구현 제안: 쓰지 않는 개인정보이므로 둘 다 중단).
->
 > 출처: [정책](../policy/user.md) | 기존 검토 DDL `member.sql`
 
 ### USER-03 가입 완료

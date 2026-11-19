@@ -94,18 +94,17 @@
 
 Apple로 가입한 회원이 탈퇴하면 Apple에서 발급한 토큰을 폐기해 연결을 해제해야 한다. 기준은 [회원 탈퇴 정책](../policy/user.md#계정과-개인정보)을 따른다. 서버는 이 해제에 사용할 Apple Refresh Token을 로그인 시점에 받아 보관한다.
 
-1. 앱은 Apple 로그인 요청에 `idToken`, `authorizationCode`와 최초 권한 부여 시 받은 `fullName`을 보낸다.
+1. 앱은 Apple 로그인 요청에 `idToken`과 `authorizationCode`를 보낸다.
 2. 서버는 ID 토큰을 검증한 뒤 인가 코드를 Apple 서버에서 교환해 Apple Refresh Token을 받는다.
 3. 서버는 Apple Refresh Token을 AES-256-GCM으로 암호화해 `apple_refresh_token`에 회원당 한 행으로 저장한다. 다시 로그인해 새 토큰을 받으면 기존 값을 교체한다. 암호화 키는 환경 변수 `AUTH_TOKEN_ENCRYPTION_KEY`로 받는다.
 4. 탈퇴 처리에서는 저장한 토큰으로 Apple에 연결 해제를 요청한다. Apple이 해제를 성공으로 응답한 경우에만 저장한 토큰을 삭제한다.
 
 Apple 인가 코드는 한 번만 교환할 수 있다. 로그인 응답을 받지 못하면 앱은 Apple 인증부터 다시 진행해 새 인가 코드를 받는다. 서버도 같은 코드의 교환을 자동으로 재시도하지 않는다.
 
-Apple은 사용자 이름을 최초 권한 부여 때만 주므로, 서버는 받은 `fullName`을 `member.social_display_name`에 저장한다. Google은 ID 토큰의 `name`, Kakao는 `nickname`을 같은 컬럼에 저장한다. 가입할 때 닉네임을 받지 않고 임의 닉네임을 부여하므로, 이 값은 Apple을 포함해 닉네임 초기값으로 쓰지 않는다(BE 논의). 저장을 계속할지는 [USER-01 논의 필요](../api-spec/user.md#user-01-가입-정보-조회)에서 정한다.
+서버는 Apple `fullName`, Google `name`, Kakao `nickname` 같은 소셜 표시 이름을 저장하지 않는다.
+가입할 때 닉네임을 받지 않고 임의 닉네임을 부여해 쓰는 곳이 없기 때문이다([USER-01](../api-spec/user.md#user-01-가입-정보-조회)).
 
 > 논의 필요
->
-> 회의에서 Apple 토큰을 Refresh Token과 같은 이름으로 다루지 말고, Apple 전용 테이블에 토큰과 `fullName`을 함께 보관하는 방안이 나왔다. 지금처럼 `apple_refresh_token`과 `member.social_display_name`으로 나눌지, Apple 전용 테이블로 합칠지 정한다.
 >
 > 암호화 키를 바꾸면 기존 행을 복호화할 수 없다. 탈퇴할 때 복호화하지 못한 행과 Apple이 해제를 거절한 경우의 처리를 회원 탈퇴 구현 전에 정한다.
 

@@ -55,9 +55,10 @@ Content-Type: `application/json`
 | `provider` | String | 필수 | 없음 | `GOOGLE`, `KAKAO`, `APPLE` 중 하나 |
 | `idToken` | String | 필수 | 없음 | 모바일 SDK에서 받은 ID 토큰 |
 | `authorizationCode` | String | 조건부 | 없음 | Apple 요청에서만 필수다. Apple 연결 해제에 필요한 토큰을 확보하기 위해 로그인 시 교환한다. |
-| `fullName` | String | 선택 | 없음 | Apple 요청에서만 보낼 수 있다. Apple SDK가 최초 권한 부여 시 이름을 반환한 경우에만 전달한다. 최대 100자. 닉네임 초기값으로 쓰지 않는다([USER-01](user.md#user-01-가입-정보-조회) 참고). |
+| `fullName` | String | 선택 | 없음 | 사용 중단. 서버는 저장하지 않는다. 기존 앱과의 호환을 위해 Apple 요청에서만 받으며 최대 100자다. 앱이 보내지 않게 되면 필드를 지운다. |
 
-문자열에 빈 값, 공백만 있는 값과 null은 허용하지 않는다. Google과 Kakao 요청에는 `authorizationCode`와 `fullName`을 보내지 않는다. 기존 회원의 이름은 소셜 로그인으로 변경하지 않는다.
+문자열에 빈 값, 공백만 있는 값과 null은 허용하지 않는다.
+Google과 Kakao 요청에는 `authorizationCode`와 `fullName`을 보내지 않는다.
 
 #### 성공 응답
 
