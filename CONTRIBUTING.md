@@ -84,10 +84,13 @@ GitHub 계정이 없는 팀원은 Issue, PR과 댓글에서 `@이름`으로 언�
 
 선행 PR은 Squash and merge로 병합되므로 선행 PR의 커밋이 `main`에 하나의 커밋으로 합쳐진다.
 선행 PR이 병합되면 자신의 커밋만 `main` 위로 옮기고 PR 대상을 `main`으로 바꾼다.
+push하기 전에 `main`과의 차이에 자신의 커밋과 변경만 남았는지 확인한다.
 
 ```bash
 git fetch origin
 git rebase --onto origin/main <선행 PR 브랜치>
+git log --oneline origin/main..HEAD
+git diff --stat origin/main...HEAD
 git push --force-with-lease
 ```
 
