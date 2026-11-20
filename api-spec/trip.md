@@ -468,6 +468,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필드에 `null`을 보내거나 필드를 하나도 보내지 않음 |
+| 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 
 > 논의 필요
 >
@@ -479,7 +480,6 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 > | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 > | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 
 #### 처리 규칙
 
@@ -764,6 +764,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
+| 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 추가하려 함 |
 | 409 | `TRIP_GUEST_NAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
 > 논의 필요
@@ -776,7 +777,6 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 > | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 > | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 추가하려 함 |
 > | 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
 
 #### 처리 규칙
@@ -1310,6 +1310,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정된 여행에 확정 전에만 허용하는 요청을 함 |
+| 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 | 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
 | 409 | `TRIP_GUEST_NAME_DUPLICATED` | 비로그인 참여자를 등록하거나 이름을 수정할 때 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 | 409 | `TRIP_IDEMPOTENCY_KEY_REUSED` | 여행 생성 고유키를 다른 회원이 이미 사용했거나, 그 키로 만든 여행이 삭제됨 |
@@ -1326,5 +1327,4 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 > | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 > | 409 | `TRIP_RECORDS_EXIST` | 삭제를 막는 지출 또는 정산 기록이 존재함 |
