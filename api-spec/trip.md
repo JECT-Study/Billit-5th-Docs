@@ -497,11 +497,6 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 `GET /api/v1/trips/{tripId}/invitation`
 
-> 논의 필요
->
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
-
 #### 인증
 
 여행 확정 전, 로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
@@ -522,51 +517,46 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [Invitation](#invitation)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [Invitation](#invitation) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "inviteCode": "A7K2PQ",
->     "inviteUrl": "https://example.com/invitations/A7K2PQ"
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [Invitation](#invitation)이다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [Invitation](#invitation) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "inviteCode": "A7K2PQ",
+    "inviteUrl": "https://example.com/invitations/A7K2PQ"
+  }
+}
+```
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 신규 초대 정보를 요청함 |
+[공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 요청한 회원이 해당 여행의 관리자가 아님. 여행에 참여하지 않은 회원도 포함 |
+| 404 | `COMMON_NOT_FOUND` | `tripId`에 해당하는 여행이 없거나 삭제됨 |
+| 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 초대 정보를 요청함 |
 
 #### 처리 규칙
 
-확정 후 신규 초대를 허용하지 않는다. 초대 코드는 확정 전까지 시간 제한 없이 유효하며, 확정하면 초대가 자동으로 종료된다. 초대를 수동으로 중지하는 API는 두지 않는다. 1차 MVP에서는 초대 코드를 재발급하지 않는다([초대 코드와 링크](../policy/trip.md#초대-코드와-링크)와 같은 규칙).
+확정 후 신규 초대를 허용하지 않는다. 초대 코드는 여행을 생성할 때 발급하며, 확정 전까지 시간 제한 없이 유효하고 확정하면 초대가 자동으로 종료된다. 초대를 수동으로 중지하는 API는 두지 않는다. 1차 MVP에서는 초대 코드를 재발급하지 않는다([초대 코드와 링크](../policy/trip.md#초대-코드와-링크)와 같은 규칙).
+
+초대 URL은 환경별로 설정한 초대 링크 기본 주소 뒤에 초대 코드를 붙여 `{기본 주소}/{초대 코드}` 형식으로 만든다.
+
+> 확인 필요
+>
+> 기본 주소가 가리킬 웹 초대 화면의 경로는 FE에 확인 중이다. 예시의 `/invitations`는 확정된 경로가 아니다.
+> 출처: [Billit-5th-Client #34](https://github.com/JECT-Study/Billit-5th-Client/issues/34#issuecomment-7007199703)
 
 ### TRIP-06 초대 코드 검색
 
 `GET /api/v1/trip-invitations`
-
-> 논의 필요
->
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
 #### 인증
 
@@ -580,75 +570,63 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 ##### Query Parameter
 
-> 논의 필요
->
-> 다음 조회 필드는 검토 제안이다. 선택 필터를 생략하면 해당 조건을 적용하지 않는다.
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `code` | String | 필수 | 없음 | 영문 대문자와 숫자를 조합한 6자리 초대 코드. 서버는 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. |
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `code` | String | 필수 | 없음 | 영문 대문자와 숫자를 조합한 6자리 초대 코드. 서버는 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 비어 있거나 공백뿐이면 400, 형식이 맞지 않으면 없는 코드와 같이 404. |
 
 요청 Body는 보내지 않는다.
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [InvitationSearch](#invitationsearch)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [InvitationSearch](#invitationsearch) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "name": "도쿄 여행",
->     "startDate": "2026-11-05",
->     "endDate": "2026-11-07",
->     "registeredMemberCount": 2,
->     "memberCapacity": 3,
->     "status": "UNCONFIRMED",
->     "isAlreadyJoined": false
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [InvitationSearch](#invitationsearch)이다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [InvitationSearch](#invitationsearch) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "name": "도쿄 여행",
+    "startDate": "2026-11-05",
+    "endDate": "2026-11-07",
+    "registeredMemberCount": 2,
+    "memberCapacity": 3,
+    "status": "UNCONFIRMED",
+    "isAlreadyJoined": false
+  }
+}
+```
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 404 | `TRIP_INVITATION_NOT_FOUND` | 해당 코드로 검색 가능한 여행이 없음 |
+[공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | `code`가 없거나 비어 있거나 공백뿐임 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 404 | `TRIP_INVITATION_NOT_FOUND` | `code`에 해당하는 여행이 없거나 삭제됨. 형식이 맞지 않는 코드도 포함 |
 
 #### 처리 규칙
 
 검색만으로 참여하거나 빈자리를 배정하지 않는다. 서버는 입력한 코드의 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다.
 
-정원이 찼거나 확정된 여행도 검색 결과를 반환한다. 앱은 등록 인원, 총인원과 확정 상태(`status`)로 [검색과 참여](../policy/trip.md#검색과-참여)의 `여행 참여 불가`를 표시한다. 삭제와 접근 차단 안내는 미정이다.
+정원이 찼거나 확정된 여행도 검색 결과를 반환한다. 앱은 등록 인원, 총인원과 확정 상태(`status`)로 [검색과 참여](../policy/trip.md#검색과-참여)의 `여행 참여 불가`를 표시한다.
+
+삭제된 여행의 코드는 없는 코드와 같이 `404 TRIP_INVITATION_NOT_FOUND`를 반환한다. 여행 API에서 삭제된 대상을 `404`로 응답하는 방식과 맞춘다.
 
 > 논의 필요
 >
-> - 삭제되거나 접근이 차단된 여행의 검색 응답을 결정한다.
+> - [여행 삭제](../policy/trip.md#여행-삭제) 정책은 기존 초대 URL과 코드로 접근하면 삭제된 여행임을 안내하라고 하지만, 현재 응답은 없는 코드와 같은 `TRIP_INVITATION_NOT_FOUND`라서 앱이 둘을 구분할 수 없다. 별도 오류 코드로 구분할지, 정책의 안내 문구를 없는 코드와 같게 고칠지 결정한다. [여행 상세](#trip-03-여행-상세)와 [여행 삭제](#trip-13-여행-삭제)에서 삭제된 여행을 응답하는 방식도 함께 정한다.
+> - [참여 조건](../policy/trip.md#참여-조건)의 '접근이 차단된 여행'은 정의된 조건이 없어 현재 응답에서 구분하지 않는다. 차단 조건을 정하면 응답 방식을 함께 결정한다.
 >
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+> 출처: [정책](../policy/trip.md)
 
 ### TRIP-07 여행 참여
 
 `POST /api/v1/trip-memberships`
-
-> 논의 필요
->
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
 #### 인증
 
@@ -662,43 +640,35 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 ##### Body
 
-> 논의 필요
->
-> 다음 요청 모델과 예시는 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> 요청 필드: [InviteCodeInput](#invitecodeinput).
->
-> ```json
-> {
->   "inviteCode": "A7K2PQ",
->   "nickname": "지훈"
-> }
-> ```
+Content-Type: `application/json`
+
+요청 필드: [InviteCodeInput](#invitecodeinput).
+
+```json
+{
+  "inviteCode": "A7K2PQ",
+  "nickname": "지훈"
+}
+```
 
 #### 성공 응답
 
 최초 참여 성공 시 HTTP `201 Created`를 반환한다. 이미 참여 중인 본인의 재요청은 기존 참여 정보를 HTTP `200 OK`로 반환한다. 참여 정보를 가리킬 조회 주소가 없으므로 `Location` 헤더는 넣지 않는다.
 
-> 논의 필요
->
-> 아래 응답 모델과 필드는 검토 제안이다.
->
-> 공통 응답의 `data`는 [Membership](#membership)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [Membership](#membership) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "tripMemberId": "participant-example-b"
->   }
-> }
-> ```
+공통 응답의 `data`는 [Membership](#membership)이다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [Membership](#membership) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "tripMemberId": "participant-example-b"
+  }
+}
+```
 
 #### 오류
 
@@ -706,31 +676,20 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없음 |
+| 400 | `COMMON_INVALID_REQUEST` | `inviteCode`가 없거나 비어 있거나 공백뿐이거나, `nickname`이 형식을 벗어남 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없거나 삭제됨. 형식이 맞지 않는 코드도 포함 |
+| 409 | `TRIP_ALREADY_CONFIRMED` | 신규 참여자가 확정된 여행에 참여하려 함 |
+| 409 | `TRIP_CAPACITY_FULL` | 신규 참여에 필요한 빈자리가 없음 |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 입력한 여행방 닉네임을 같은 여행의 다른 참여자가 사용 중임 |
-
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 409 | `TRIP_ALREADY_CONFIRMED` | 신규 참여자가 확정된 여행에 참여하려 함 |
-> | 409 | `TRIP_CAPACITY_FULL` | 신규 참여에 필요한 빈자리가 없음 |
 
 #### 처리 규칙
 
-이미 참여 중인 본인은 추가 등록 없이 기존 tripId와 tripMemberId를 반환한다. 참여 성공 응답을 받지 못해 재요청해도 같은 참여 정보를 200으로 반환한다. 나간 회원이 확정 전에 다시 참여하면 새 참여 정보를 만들지 않고 나가기 전의 `tripMemberId`를 다시 쓰며, 여행방 닉네임도 나가기 전에 쓰던 닉네임을 그대로 쓴다([재참여](../policy/trip.md#재참여)와 같은 규칙). 신규 참여는 여행 유효성, 확정 여부, 빈자리와 여행방 닉네임 중복을 재검증한다. 여행 종료일이 지났더라도 확정 전이면 참여할 수 있다([참여 조건](../policy/trip.md#참여-조건)과 같은 규칙). 동시 요청으로 중복 참여와 정원 초과를 만들지 않는다. 같은 회원의 중복 참여는 `(trip_id, member_id)` UNIQUE 제약으로 막는다([ERD 변경 목록](../design/erd-changes.md#반영할-변경)).
+이미 참여 중인 본인은 추가 등록 없이 기존 tripId와 tripMemberId를 반환한다. 여행이 확정됐거나 정원이 찼어도, 다른 닉네임을 보내도 같다. 참여 성공 응답을 받지 못해 재요청해도 같은 참여 정보를 200으로 반환한다. 나간 회원이 확정 전에 다시 참여하면 새 참여 정보를 만들지 않고 나가기 전의 `tripMemberId`를 다시 쓰며, 여행방 닉네임도 나가기 전에 쓰던 닉네임을 그대로 쓴다([재참여](../policy/trip.md#재참여)와 같은 규칙). 신규 참여는 여행 유효성, 확정 여부, 빈자리와 여행방 닉네임 중복을 재검증한다. 여행 종료일이 지났더라도 확정 전이면 참여할 수 있다([참여 조건](../policy/trip.md#참여-조건)과 같은 규칙).
 
-서버는 초대 코드의 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 신규 참여자가 입력한 여행방 닉네임이 같은 여행의 로그인 참여자나 비로그인 참여자의 여행방 닉네임과 같으면 참여를 거절한다. 같은 이름의 비로그인 참여자 때문에 거절됐다면 관리자가 [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)로 그 참여자를 삭제한 뒤 참여할 수 있다.
+동시 요청으로 중복 참여와 정원 초과를 만들지 않는다. 서버는 참여를 처리하는 동안 여행을 잠가 같은 여행의 참여 요청을 차례로 처리하고, 같은 회원의 중복 참여는 `(trip_id, member_id)` UNIQUE 제약으로도 막는다. 처리 방식은 [ERD 변경 목록](../design/erd-changes.md#반영할-변경)을 따른다.
 
-> 논의 필요
->
-> - 동시 요청에서 정원 초과를 막는 트랜잭션 방식을 결정한다.
->
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+서버는 초대 코드의 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 삭제된 여행의 코드는 없는 코드와 같이 처리하며, 남은 결정은 [초대 코드 검색](#trip-06-초대-코드-검색)의 논의 사항을 따른다. 신규 참여자가 입력한 여행방 닉네임이 같은 여행의 로그인 참여자나 비로그인 참여자의 여행방 닉네임과 같으면 참여를 거절한다. 같은 이름의 비로그인 참여자 때문에 거절됐다면 관리자가 [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)로 그 참여자를 삭제한 뒤 참여할 수 있다.
 
 ### TRIP-08 비로그인 참여자 등록
 
@@ -1239,53 +1198,37 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 ### Invitation
 
-> 논의 필요
->
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `inviteCode` | String | 아니요 | 항상 | 영문 대문자와 숫자를 조합한 6자리 초대 코드. 1차 MVP에서는 재발급하지 않으며, 확정 전까지 시간 제한 없이 유효하다. |
-> | `inviteUrl` | String | 아니요 | 항상 | 초대 링크. 열기만 해서는 참여하지 않는다. |
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `inviteCode` | String | 아니요 | 항상 | 영문 대문자와 숫자를 조합한 6자리 초대 코드. 1차 MVP에서는 재발급하지 않으며, 확정 전까지 시간 제한 없이 유효하다. |
+| `inviteUrl` | String | 아니요 | 항상 | 초대 링크. `{기본 주소}/{초대 코드}` 형식이며, 열기만 해서는 참여하지 않는다. |
 
 ### InvitationSearch
 
-> 논의 필요
->
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
-> | `name` | String | 아니요 | 항상 | 여행명. |
-> | `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
-> | `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. |
-> | `registeredMemberCount` | Integer | 아니요 | 항상 | 현재 등록 인원. |
-> | `memberCapacity` | Integer | 아니요 | 항상 | 총 정원. |
-> | `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후([TripSummary](#tripsummary)의 `status`와 같은 값). |
-> | `isAlreadyJoined` | Boolean | 아니요 | 항상 | 현재 요청자의 기존 참여 여부. |
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
+| `name` | String | 아니요 | 항상 | 여행명. |
+| `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
+| `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. |
+| `registeredMemberCount` | Integer | 아니요 | 항상 | 현재 등록 인원. |
+| `memberCapacity` | Integer | 아니요 | 항상 | 총 정원. |
+| `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후([TripSummary](#tripsummary)의 `status`와 같은 값). |
+| `isAlreadyJoined` | Boolean | 아니요 | 항상 | 현재 요청자의 기존 참여 여부. |
 
 ### InviteCodeInput
 
-> 논의 필요
->
-> 요청 모델 후보:
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `inviteCode` | String | 필수 | 없음 | 공유받은 6자리 초대 코드. 서버는 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. |
-> | `nickname` | String | 필수 | 없음 | 이 여행에서 사용할 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([계정 닉네임](../policy/user.md#닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `inviteCode` | String | 필수 | 없음 | 공유받은 6자리 초대 코드. 서버는 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 비어 있거나 공백뿐이면 400, 형식이 맞지 않으면 없는 코드와 같이 404. |
+| `nickname` | String | 필수 | 없음 | 이 여행에서 사용할 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([계정 닉네임](../policy/user.md#닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
 
 ### Membership
 
-> 논의 필요
->
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
+| `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 
 ### Participant
 
@@ -1340,9 +1283,10 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정된 여행에 확정 전에만 허용하는 요청을 함 |
+| 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
 | 409 | `TRIP_GUEST_NAME_DUPLICATED` | 비로그인 참여자를 등록하거나 이름을 수정할 때 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 | 409 | `TRIP_IDEMPOTENCY_KEY_REUSED` | 여행 생성 고유키를 다른 회원이 이미 사용했거나, 그 키로 만든 여행이 삭제됨 |
-| 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없음 |
+| 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없거나 삭제됨. 형식이 맞지 않는 코드도 포함 |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 여행에 참여할 때 입력한 여행방 닉네임을 같은 여행의 다른 참여자가 사용 중임 |
 
 > 논의 필요
@@ -1356,5 +1300,4 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 > | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 > | 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
-> | 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
 > | 409 | `TRIP_RECORDS_EXIST` | 삭제를 막는 지출 또는 정산 기록이 존재함 |
