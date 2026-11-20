@@ -92,6 +92,7 @@ operationId는 백엔드 [API 문서 기준](https://github.com/JECT-Study/Billi
 | `page` | Integer | 선택 | 0 | 0 이상. 다음 페이지는 현재 page+1. |
 | `size` | Integer | 선택 | 20 | 1~100, 범위 밖이면 400. |
 | `filter` | String | 선택 | 없음 | `INVITING`은 참여자 초대중, `UPCOMING`은 여행 예정, `ENDED`는 여행 종료. 확정 전 여행은 여행 시작일과 관계없이 `INVITING`에만 들어가고, `UPCOMING`과 `ENDED`에는 확정 후 여행만 들어간다([여행 상태](../policy/trip.md#여행-상태)와 같은 기준). 생략하면 진행 중 여행을 포함한 전체 여행 목록을 조회한다. |
+| `today` | String | 필수 | 없음 | YYYY-MM-DD. 사용자 기기의 현지 날짜이며, 앱은 기기의 로컬 연, 월, 일로 값을 만든다. `filter`와 관계없이 항상 보낸다. 빠졌거나 형식이 틀리면 400. |
 
 필터는 서버가 적용하며, 페이지는 필터를 적용한 결과에 나눈다. 여행 목록 화면의 기본 필터는 전체 여행 목록이다.
 
@@ -116,6 +117,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
       "memberCapacity": 3,
       "registeredMemberCount": 3,
       "status": "UNCONFIRMED",
+      "scheduleStatus": "INVITING",
       "myRole": "ADMIN",
       "myShareAmountKrw": "0.00"
     }
@@ -137,7 +139,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 >
 > | HTTP | 코드 | 조건 |
 > | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `today`가 없거나 `YYYY-MM-DD` 형식이 아닌 경우도 포함 |
 > | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 
 #### 처리 규칙
@@ -146,10 +148,18 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 
 진행 중 여행은 목록 상단의 별도 영역에 표시한다. 여행 예정, 진행 중과 여행 종료를 나누는 기준은 [여행 상태](../policy/trip.md#여행-상태)를 따르며, 이때 '오늘'은 사용자 기기의 현지 날짜다.
 
+앱은 이 날짜를 `today`로 보낸다.
+서버는 시간대를 받지 않고, 받은 날짜를 여행 시작일, 종료일과 비교해 `filter`를 적용하고 여행 카드의 일정 상태(`scheduleStatus`)를 계산한다.
+앱은 `startDate`, `endDate`와 `status`로 일정 상태를 따로 판단하지 않고 `scheduleStatus`로 표시한다.
+
+앱은 다음 페이지를 요청할 때도 첫 페이지(`page=0`) 요청에 쓴 `today`를 그대로 보낸다.
+페이지를 받는 사이에 자정을 넘겨도 중간 페이지부터 날짜 기준을 바꾸지 않는다.
+새로고침, 목록 화면 재진입과 앱 복귀 때는 현재 현지 날짜로 `page=0`부터 다시 조회한다.
+
 > 논의 필요
 >
 > - 상단의 진행 중 여행 영역을 이 API로 조회할지, 별도 영역과 페이지의 관계를 결정한다.
-> - 서버가 필터를 적용하므로 서버가 사용자 기기의 현지 날짜를 알아야 한다. 앱이 그 날짜를 요청에 담아 보낼지 등 서버에 전달하는 방식을 정한다. 응답 모델에는 일정 상태 필드를 추가하지 않았다.
+> - `today`가 서버의 UTC 날짜 기준 전날부터 다음 날까지의 범위를 벗어나면 400으로 거절할지 결정한다. 현지 날짜는 시간대에 따라 서버의 UTC 날짜보다 하루 이르거나 늦을 수 있어, 이 범위로 잘못된 날짜를 걸러낼 수 있다. 다만 기기 시각이 잘못 설정됐거나, 목록을 하루 넘게 띄워 둔 뒤 첫 페이지의 `today`로 다음 페이지를 요청하면 400을 받을 수 있다.
 > - 앱이 받은 여행 목록을 기기에 저장해 화면에 먼저 보여주고, 이후에는 서버가 추가, 수정, 삭제된 여행만 보내는 방향을 검토한다. 변경분을 요청하는 기준, 삭제된 여행의 전달 방식과 offset 페이지와의 관계를 정한다.
 >
 > 출처: [정책](../policy/trip.md#여행-조회) | 기존 검토 DDL `trip.sql`
@@ -1205,6 +1215,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 | `memberCapacity` | Integer | 아니요 | 항상 | 총 정원, 1~10명. |
 | `registeredMemberCount` | Integer | 아니요 | 항상 | 회원과 비로그인 참여자의 합. 빈자리 제외. |
 | `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후. |
+| `scheduleStatus` | String | 아니요 | 항상 | 여행 카드의 일정 상태. `INVITING`은 참여자 초대중, `UPCOMING`은 여행 예정, `ONGOING`은 진행 중, `ENDED`는 여행 종료. 서버가 요청의 `today`로 `filter`와 같은 기준([여행 상태](../policy/trip.md#여행-상태))에 따라 계산한다. |
 | `myRole` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
 | `myShareAmountKrw` | String | 아니요 | 항상 | 요청한 회원의 누적 부담액. 원화이며 소수점 이하 2자리 문자열로 전달한다. |
 
