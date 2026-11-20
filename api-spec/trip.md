@@ -274,7 +274,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >
 > - 검토 제안: `countryCode`가 `ETC`일 때만 `customCountryName`을 필수로 받으며, `countryCode`가 `ETC`가 아니면 `customCountryName`을 생략해야 한다.
 > `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다(`null` 불가).
-> - 같은 키의 요청이 동시에 왔을 때 늦게 처리된 요청의 응답과 `trip`에 생성자 컬럼을 추가할지는 [여행 생성 멱등성](../design/idempotency.md#여행-생성-멱등성)의 논의 사항을 따른다.
+> - 같은 키의 요청이 동시에 왔을 때 늦게 처리된 요청의 응답은 [여행 생성 멱등성](../design/idempotency.md#여행-생성-멱등성)의 논의 사항을 따른다.
 >
 > 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
 
