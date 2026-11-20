@@ -538,7 +538,6 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [Invitation](#invitati
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | `tripId`가 숫자 형식이 아님 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 요청한 회원이 해당 여행의 관리자가 아님. 여행에 참여하지 않은 회원도 포함 |
 | 404 | `COMMON_NOT_FOUND` | `tripId`에 해당하는 여행이 없거나 삭제됨 |
