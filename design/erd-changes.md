@@ -6,7 +6,7 @@
 
 | 대상 | 기존 검토 DDL | 변경 방향 | 확정 범위 |
 | --- | --- | --- | --- |
-| `trip_member.guest_name` | `VARCHAR(10)`, 비로그인 참여자 이름. `UNIQUE (trip_id, guest_name)` | 로그인 참여자의 여행방 닉네임도 함께 저장하고 기존 제약 유지 | 로그인 참여자와 비로그인 참여자 모두의 여행방 닉네임을 저장한다. 같은 여행에서는 로그인 여부와 관계없이 이름 중복을 금지하며 비로그인 참여자 등록, 이름 수정과 여행 참여에 모두 적용한다. |
+| `trip_member.guest_name` | `VARCHAR(10)`, 비로그인 참여자 이름. `UNIQUE (trip_id, guest_name)` | 컬럼명을 `trip_nickname`으로 바꾸고 로그인 참여자의 여행방 닉네임도 함께 저장. `UNIQUE (trip_id, trip_nickname)` 유지 | 로그인 참여자와 비로그인 참여자 모두의 여행방 닉네임을 저장한다. 계정 닉네임(`member.nickname`)과 구분하고 비로그인 참여자 전용이 아님을 드러내도록 컬럼명을 `trip_nickname`으로 바꾼다. 같은 여행에서는 로그인 여부와 관계없이 이름 중복을 금지하며 여행 참여, 내 여행방 닉네임 수정, 비로그인 참여자 등록과 이름 수정에 모두 적용한다. |
 | `trip.members_locked_at` | `TIMESTAMPTZ NULL`, NULL이면 참여자 초대 중 | 여행 확정 여부를 `status` 컬럼으로 관리하고, 확정 시각은 `confirmed_at`으로 이름을 바꿔 함께 저장 | `status` 컬럼으로 관리하며, API에서는 `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후)로 전달한다. 확정 시각도 `confirmed_at`으로 함께 저장한다. |
 | `trip.country_code` | `CHAR(2) NOT NULL` | `VARCHAR(3) NOT NULL`로 변경하고 `custom_country_name VARCHAR(10) NULL`과 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 추가. 대표 국가 필수 유지 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. 기타 국가이면 `country_code`에 API 값과 같은 `ETC`를 저장하고, 세 글자를 담도록 `country_code`를 `VARCHAR(3)`으로 바꾼다. 기타 국가일 때만 `custom_country_name`에 값이 있고 대표 국가일 때는 NULL이 되도록 DB에도 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 제약을 둔다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. 기타 국가명은 최대 10자다([기본 정보](../policy/trip.md#기본-정보)). |
 | `trip_member.role` | `OWNER`, `MEMBER` | `OWNER`를 `ADMIN`으로 변경 | 역할 값 `ADMIN`, `MEMBER` 확정. 여행 생성자이자 관리자는 `role = ADMIN`인 행으로 판단하며, `trip`에 생성자 컬럼을 추가하지 않는다. 여행 생성 고유키를 사용한 회원 확인, 응답의 `myRole`, 여행 수정, 삭제와 확정 API의 관리자 권한 검증에 이 값을 사용한다([여행 생성 멱등성](idempotency.md#여행-생성-멱등성)). |
@@ -25,7 +25,10 @@
 
 `trip`, `trip_member`와 `member`의 기존 값은 백엔드 `develop`의 초기 마이그레이션 `V20261107063430__create_initial_schema.sql`(커밋 `c857020`)에서 확인했다.
 
-같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다. 로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로, 백엔드 Flyway 마이그레이션의 `guest_name` 주석을 여행방 닉네임 기준으로 고쳐야 한다. 같은 주석의 '여행 시작 전 수정 가능'도 여행 확정 전과 후 모두 수정할 수 있는 기준으로 고쳐야 한다([비로그인 참여자](../policy/trip.md#비로그인-참여자)). 빈자리 행을 만들지 않으므로 `trip_member`의 '자리'와 '빈자리' 주석도 함께 고쳐야 한다.
+같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다.
+로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로 컬럼명을 `trip_nickname`으로 바꾸고, 유니크 제약(`uq_trip_member_trip_id_trip_nickname`)과 컬럼 주석도 여행방 닉네임 기준으로 고쳐야 한다.
+같은 주석의 '여행 시작 전 수정 가능'도 여행 확정 전과 후 모두 수정할 수 있는 기준으로 고쳐야 한다([여행방 닉네임](../policy/trip.md#여행방-닉네임), [비로그인 참여자](../policy/trip.md#비로그인-참여자)).
+빈자리 행을 만들지 않으므로 `trip_member`의 '자리'와 '빈자리' 주석도 함께 고쳐야 한다.
 
 ## 추가 컬럼 후보
 
@@ -102,9 +105,12 @@
 
 ### 예시: 여행방 닉네임이 이미 등록된 경우
 
-같은 여행의 `trip_member` 21에 `guest_name = 민수`가 있다면, 민수를 다시 등록하는 요청은 거절한다. 다른 비회원 이름을 민수로 수정하려는 요청과 회원이 여행방 닉네임 민수로 참여하려는 요청도 같은 제약을 적용한다. 요청이 동시에 들어와도 기존 `(trip_id, guest_name)` UNIQUE로 같은 이름이 둘 다 저장되지 않게 한다.
+같은 여행의 `trip_member` 21에 `trip_nickname = 민수`가 있다면, 민수를 다시 등록하는 요청은 거절한다.
+다른 비회원 이름을 민수로 수정하려는 요청, 회원이 여행방 닉네임 민수로 참여하거나 자신의 여행방 닉네임을 민수로 수정하려는 요청도 같은 제약을 적용한다.
+요청이 동시에 들어와도 `(trip_id, trip_nickname)` UNIQUE로 같은 이름이 둘 다 저장되지 않게 한다.
 
-로그인 참여자의 여행방 닉네임도 `guest_name`에 저장하므로, 기존 복합 UNIQUE 하나로 회원과 비회원 사이의 이름 중복까지 막는다. 회원이 계정 닉네임(`member.nickname`)을 바꿔도 `guest_name`은 바뀌지 않는다.
+로그인 참여자의 여행방 닉네임도 `trip_nickname`에 저장하므로, 복합 UNIQUE 하나로 회원과 비회원 사이의 이름 중복까지 막는다.
+회원이 계정 닉네임(`member.nickname`)을 바꿔도 `trip_nickname`은 바뀌지 않는다.
 
 참여자 연결은 계속 `trip_member.id`를 사용한다.
 

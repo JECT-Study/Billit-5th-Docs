@@ -16,6 +16,7 @@
   - [TRIP-08 비로그인 참여자 등록](#trip-08-비로그인-참여자-등록)
   - [TRIP-09 비로그인 이름 수정](#trip-09-비로그인-이름-수정)
   - [TRIP-10 비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)
+  - [TRIP-15 내 여행방 닉네임 수정](#trip-15-내-여행방-닉네임-수정)
 - [확정과 종료 API](#확정과-종료-api)
   - [TRIP-11 여행 확정](#trip-11-여행-확정)
   - [TRIP-12 여행 나가기 전 건수 조회](#trip-12-여행-나가기-전-건수-조회)
@@ -58,16 +59,13 @@
 | [비로그인 참여자 등록](#trip-08-비로그인-참여자-등록) | `POST` | `/api/v1/trips/{tripId}/guests` | 여행 관리자 (여행 확정 전) | `createTripGuest` |
 | [비로그인 이름 수정](#trip-09-비로그인-이름-수정) | `PATCH` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 | `updateTripGuest` |
 | [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제) | `DELETE` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 (여행 확정 전) | `deleteTripGuest` |
+| [내 여행방 닉네임 수정](#trip-15-내-여행방-닉네임-수정) | `PATCH` | `/api/v1/trips/{tripId}/members/me` | 여행 참여자 | `updateMyTripMember` |
 | [여행 확정](#trip-11-여행-확정) | `POST` | `/api/v1/trips/{tripId}/confirm` | 여행 관리자 | `confirmTrip` |
 | [여행 나가기 전 건수 조회](#trip-12-여행-나가기-전-건수-조회) | `GET` | `/api/v1/trips/{tripId}/leave-preview` | 여행 참여자 (관리자 제외) | `getTripLeavePreview` |
 | [여행 나가기](#trip-13-여행-나가기) | `POST` | `/api/v1/trips/{tripId}/leave` | 여행 참여자 (관리자 제외) | `leaveTrip` |
 | [여행 삭제](#trip-14-여행-삭제) | `DELETE` | `/api/v1/trips/{tripId}` | 여행 관리자 | `deleteTrip` |
 
 operationId는 백엔드 [API 문서 기준](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-documentation.md#태그와-operationid)의 이름 규칙을 따른다.
-
-> 논의 필요
->
-> 회원이 자기 여행방 닉네임을 수정하는 API의 경로와 요청 형식을 정한다. 회원은 여행에 참여한 뒤에도 자신의 여행방 닉네임을 수정할 수 있다([여행방 닉네임](../policy/trip.md#여행방-닉네임)).
 
 ## 여행 조회와 관리 API
 
@@ -205,7 +203,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 >   "startDate": "2026-11-05",
 >   "endDate": "2026-11-07",
 >   "memberCapacity": 3,
->   "nickname": "민지"
+>   "tripNickname": "민지"
 > }
 > ```
 >
@@ -220,7 +218,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 >   "startDate": "2026-12-01",
 >   "endDate": "2026-12-04",
 >   "memberCapacity": 4,
->   "nickname": "민지"
+>   "tripNickname": "민지"
 > }
 > ```
 
@@ -351,7 +349,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >       {
 >         "tripMemberId": "participant-example-a",
 >         "memberId": "member-example-a",
->         "displayName": "민지",
+>         "tripNickname": "민지",
 >         "role": "ADMIN",
 >         "participantStatus": "MEMBER",
 >         "shareAmountKrw": "0.00"
@@ -359,7 +357,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >       {
 >         "tripMemberId": "participant-example-b",
 >         "memberId": "member-example-b",
->         "displayName": "지훈",
+>         "tripNickname": "지훈",
 >         "role": "MEMBER",
 >         "participantStatus": "MEMBER",
 >         "shareAmountKrw": "0.00"
@@ -367,7 +365,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >       {
 >         "tripMemberId": "participant-example-c",
 >         "memberId": null,
->         "displayName": "서연",
+>         "tripNickname": "서연",
 >         "role": "MEMBER",
 >         "participantStatus": "GUEST",
 >         "shareAmountKrw": "0.00"
@@ -375,7 +373,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >       {
 >         "tripMemberId": "participant-example-d",
 >         "memberId": "member-example-d",
->         "displayName": "하준",
+>         "tripNickname": "하준",
 >         "role": "MEMBER",
 >         "participantStatus": "LEFT",
 >         "shareAmountKrw": "0.00"
@@ -383,7 +381,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >       {
 >         "tripMemberId": "participant-example-e",
 >         "memberId": null,
->         "displayName": "탈퇴한 사용자 1",
+>         "tripNickname": "탈퇴한 사용자 1",
 >         "role": "MEMBER",
 >         "participantStatus": "WITHDRAWN",
 >         "shareAmountKrw": "0.00"
@@ -391,7 +389,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >       {
 >         "tripMemberId": "participant-example-f",
 >         "memberId": null,
->         "displayName": "탈퇴한 사용자 2",
+>         "tripNickname": "탈퇴한 사용자 2",
 >         "role": "MEMBER",
 >         "participantStatus": "WITHDRAWN",
 >         "shareAmountKrw": "0.00"
@@ -670,7 +668,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [InvitationSearch](#in
 
 > 논의 필요
 >
-> - [여행 삭제](../policy/trip.md#여행-삭제) 정책은 기존 초대 URL과 코드로 접근하면 삭제된 여행임을 안내하라고 하지만, 현재 응답은 없는 코드와 같은 `TRIP_INVITATION_NOT_FOUND`라서 앱이 둘을 구분할 수 없다. 별도 오류 코드로 구분할지, 정책의 안내 문구를 없는 코드와 같게 고칠지 결정한다. [여행 상세](#trip-03-여행-상세)와 [여행 삭제](#trip-13-여행-삭제)에서 삭제된 여행을 응답하는 방식도 함께 정한다.
+> - [여행 삭제](../policy/trip.md#여행-삭제) 정책은 기존 초대 URL과 코드로 접근하면 삭제된 여행임을 안내하라고 하지만, 현재 응답은 없는 코드와 같은 `TRIP_INVITATION_NOT_FOUND`라서 앱이 둘을 구분할 수 없다. 별도 오류 코드로 구분할지, 정책의 안내 문구를 없는 코드와 같게 고칠지 결정한다. [여행 상세](#trip-03-여행-상세)와 [여행 삭제](#trip-14-여행-삭제)에서 삭제된 여행을 응답하는 방식도 함께 정한다.
 > - [참여 조건](../policy/trip.md#참여-조건)의 '접근이 차단된 여행'은 정의된 조건이 없어 현재 응답에서 구분하지 않는다. 차단 조건을 정하면 응답 방식을 함께 결정한다.
 >
 > 출처: [정책](../policy/trip.md)
@@ -698,7 +696,7 @@ Content-Type: `application/json`
 ```json
 {
   "inviteCode": "A7K2PQ",
-  "nickname": "지훈"
+  "tripNickname": "지훈"
 }
 ```
 
@@ -727,7 +725,7 @@ Content-Type: `application/json`
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | `inviteCode`가 없거나 비어 있거나 공백뿐이거나, `nickname`이 형식을 벗어남 |
+| 400 | `COMMON_INVALID_REQUEST` | `inviteCode`가 없거나 비어 있거나 공백뿐이거나, `tripNickname`이 형식을 벗어남 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없거나 삭제됨. 형식이 맞지 않는 코드도 포함 |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 신규 참여자가 확정된 여행에 참여하려 함 |
@@ -782,7 +780,7 @@ Content-Type: `application/json`
 >
 > ```json
 > {
->   "name": "서연"
+>   "tripNickname": "서연"
 > }
 > ```
 
@@ -802,7 +800,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 > {
 >   "data": {
 >     "tripMemberId": "participant-example-c",
->     "name": "서연"
+>     "tripNickname": "서연"
 >   }
 > }
 > ```
@@ -814,7 +812,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 추가하려 함 |
-| 409 | `TRIP_GUEST_NAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
+| 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
 > 논의 필요
 >
@@ -873,7 +871,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 >
 > ```json
 > {
->   "name": "서연"
+>   "tripNickname": "서연"
 > }
 > ```
 
@@ -893,7 +891,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 > {
 >   "data": {
 >     "tripMemberId": "participant-example-c",
->     "name": "서연"
+>     "tripNickname": "서연"
 >   }
 > }
 > ```
@@ -904,7 +902,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 409 | `TRIP_GUEST_NAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
+| 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
 > 논의 필요
 >
@@ -977,6 +975,99 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 여행 확정과 동시에 요청돼 확정이 먼저 처리되면, 뒤에 처리되는 삭제는 `409 TRIP_ALREADY_CONFIRMED`로 거절한다([여행 확정](#trip-11-여행-확정)의 동시 요청 처리와 같은 규칙).
 
 같은 이름의 비로그인 참여자 때문에 [여행 참여](#trip-07-여행-참여)가 거절된 회원은 관리자가 이 API로 그 참여자를 삭제한 뒤 참여할 수 있다.
+
+### TRIP-15 내 여행방 닉네임 수정
+
+`PATCH /api/v1/trips/{tripId}/members/me`
+
+#### 인증
+
+로그인한 회원 중 해당 여행에 참여하고 있는 회원만 요청할 수 있다.
+Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+
+#### 설명
+
+요청한 회원의 여행방 닉네임을 수정한다.
+여행 확정 전과 후 모두 수정할 수 있다.
+
+#### 요청
+
+##### Path Parameter
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
+
+##### Body
+
+> 논의 필요
+>
+> 요청 필드 이름은 검토 제안이다.
+>
+> Content-Type: `application/json`
+>
+> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
+> | --- | --- | --- | --- | --- |
+> | `tripNickname` | String | 필수 | 없음 | 바꿀 본인의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+>
+> ```json
+> {
+>   "tripNickname": "민지"
+> }
+> ```
+
+#### 성공 응답
+
+HTTP `200 OK`를 반환한다.
+공통 응답의 `data`는 [Participant](#participant)이다.
+
+> 논의 필요
+>
+> [Participant](#participant)의 필드 구성은 검토 제안이다.
+>
+> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
+> | --- | --- | --- | --- | --- |
+> | `data` | [Participant](#participant) | 아니요 | 항상 | 수정된 본인의 여행 참여 정보. |
+>
+> ```json
+> {
+>   "data": {
+>     "tripMemberId": "participant-example-a",
+>     "memberId": "member-example-a",
+>     "tripNickname": "민지",
+>     "role": "ADMIN",
+>     "participantStatus": "MEMBER",
+>     "shareAmountKrw": "0.00"
+>   }
+> }
+> ```
+
+#### 오류
+
+[공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
+
+> 논의 필요
+>
+> 아래 오류 매핑은 제안이다.
+>
+> | HTTP | 코드 | 조건 |
+> | --- | --- | --- |
+> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 해당 여행의 참여자가 아님. 이미 여행을 나간 회원의 요청을 포함 |
+> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행이 없거나 삭제됨 |
+
+#### 처리 규칙
+
+요청한 회원은 Access Token으로 식별하므로 경로에 `tripMemberId`를 받지 않는다.
+여행 확정 전과 후 모두 본인의 여행방 닉네임을 수정할 수 있다.
+바꿀 이름이 같은 여행의 다른 로그인 참여자나 비로그인 참여자의 여행방 닉네임과 겹치면 `409 TRIP_NICKNAME_DUPLICATED`로 거절한다.
+여행방 닉네임을 바꿔도 기존 지출과 정산 내역은 같은 참여자(`tripMemberId`)의 기록으로 유지하며, 계정 닉네임은 바뀌지 않는다([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙).
+이미 여행을 나간 회원은 참여자가 아니므로 `403`으로 거절하고, 삭제된 여행은 `404`로 거절한다.
 
 ## 확정과 종료 API
 
@@ -1335,7 +1426,7 @@ HTTP `200 OK`를 반환한다.
 > | `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
 > | `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
 > | `memberCapacity` | Integer | 필수 | 없음 | 생성자 포함 1~10명. |
-> | `nickname` | String | 필수 | 없음 | 생성자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([InviteCodeInput](#invitecodeinput)의 `nickname`과 같은 규칙). |
+> | `tripNickname` | String | 필수 | 없음 | 생성자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([InviteCodeInput](#invitecodeinput)의 `tripNickname`과 같은 규칙). |
 
 ### Invitation
 
@@ -1362,7 +1453,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `inviteCode` | String | 필수 | 없음 | 공유받은 6자리 초대 코드. 서버는 앞뒤 공백을 지우고 대소문자를 구분하지 않고 비교한다. 비어 있거나 공백뿐이면 400, 형식이 맞지 않으면 없는 코드와 같이 404. |
-| `nickname` | String | 필수 | 없음 | 이 여행에서 사용할 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([계정 닉네임](../policy/user.md#닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+| `tripNickname` | String | 필수 | 없음 | 이 여행에서 사용할 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
 
 ### Membership
 
@@ -1381,14 +1472,14 @@ HTTP `200 OK`를 반환한다.
 > | --- | --- | --- | --- | --- |
 > | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 > | `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자와 탈퇴 회원이면 null이다. |
-> | `displayName` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 탈퇴 회원이면 서버가 만든 '탈퇴한 사용자 N'이다. 이름을 식별자로 사용하지 않는다. |
+> | `tripNickname` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 탈퇴 회원이면 서버가 만든 '탈퇴한 사용자 N'이다. 이름을 식별자로 사용하지 않는다. |
 > | `role` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
 > | `participantStatus` | String | 아니요 | 항상 | 참여자 상태. `MEMBER`는 로그인 참여자, `GUEST`는 비로그인 참여자, `LEFT`는 나간 회원, `WITHDRAWN`은 탈퇴 회원이다. |
 > | `shareAmountKrw` | String | 아니요 | 항상 | 참여자별 부담액. 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다. 소수점 이하 2자리 문자열로 전달한다. |
 
 참여자 상태는 `participantStatus`로 전달하며, 값은 DB의 참여자 상태(`trip_member_status`)와 같다([ERD 변경 목록](../design/erd-changes.md#반영할-변경)).
-나간 회원의 `displayName`에는 나가기 전에 쓰던 여행방 닉네임을 담는다.
-탈퇴 회원의 `memberId`는 null이고, `displayName`에는 서버가 만든 '탈퇴한 사용자 N'을 담는다.
+나간 회원의 `tripNickname`에는 나가기 전에 쓰던 여행방 닉네임을 담는다.
+탈퇴 회원의 `memberId`는 null이고, `tripNickname`에는 서버가 만든 '탈퇴한 사용자 N'을 담는다.
 N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대로 1부터 붙이며, 탈퇴 회원이 1명이어도 '탈퇴한 사용자 1'로 보낸다([공동 기록과 미완료 정산](../policy/user.md#공동-기록과-미완료-정산)과 같은 규칙).
 
 ### GuestInput
@@ -1399,7 +1490,7 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 >
 > | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 > | --- | --- | --- | --- | --- |
-> | `name` | String | 필수 | 없음 | 비로그인 참여자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([계정 닉네임](../policy/user.md#닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+> | `tripNickname` | String | 필수 | 없음 | 비로그인 참여자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
 
 ### Guest
 
@@ -1410,7 +1501,7 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
 > | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
-> | `name` | String | 아니요 | 항상 | 등록된 비로그인 이름. |
+> | `tripNickname` | String | 아니요 | 항상 | 등록된 비로그인 참여자의 여행방 닉네임. |
 
 ### TripConfirmation
 
@@ -1432,10 +1523,9 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정된 여행에 확정 전에만 허용하는 요청을 함 |
 | 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 | 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
-| 409 | `TRIP_GUEST_NAME_DUPLICATED` | 비로그인 참여자를 등록하거나 이름을 수정할 때 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 | 409 | `TRIP_IDEMPOTENCY_KEY_REUSED` | 여행 생성 고유키를 다른 회원이 이미 사용했거나, 그 키로 만든 여행이 삭제됨 |
 | 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없거나 삭제됨. 형식이 맞지 않는 코드도 포함 |
-| 409 | `TRIP_NICKNAME_DUPLICATED` | 여행에 참여할 때 입력한 여행방 닉네임을 같은 여행의 다른 참여자가 사용 중임 |
+| 409 | `TRIP_NICKNAME_DUPLICATED` | 여행에 참여하거나 비로그인 참여자를 등록하거나 여행방 닉네임을 수정할 때, 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
 > 논의 필요
 >
