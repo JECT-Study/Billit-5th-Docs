@@ -280,8 +280,10 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 생성자를 첫 참여자로 등록한다. 정원 1~10명, 종료일은 시작일 이상이다.
 
 고유키는 여행 생성에만 사용한다.
-같은 회원이 같은 키로 다시 보낸 요청만 재요청으로 보고, 여행과 생성자 참여 정보를 다시 만들지 않는다.
-서버는 재요청의 본문을 처음 요청과 비교하지 않으므로 본문이 달라도 처음 만든 여행을 반환한다.
+서버는 요청 본문의 형식과 조건(필수값, 글자 수와 정원 범위, 종료일이 시작일 이상인지, `countryCode`와 `customCountryName`의 조합이 맞는지)을 먼저 검증한 뒤 고유키를 조회한다.
+본문이 유효하지 않으면 이미 사용한 고유키로 보낸 재요청이어도 고유키를 조회하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다.
+본문이 유효하고 같은 회원이 같은 키로 다시 보낸 요청이면 재요청으로 보고, 여행과 생성자 참여 정보를 다시 만들지 않는다.
+서버는 유효한 재요청의 본문을 처음 요청과 비교하지 않으므로 본문 값이 처음 요청과 달라도 처음 만든 여행을 반환한다.
 같은 키의 요청이 동시에 와도 여행은 하나만 만든다.
 늦게 처리된 요청도 같은 회원의 요청이면 `201 Created`와 `Location`, 먼저 만든 여행의 현재 정보를 반환한다.
 다른 회원이 이미 사용한 키이거나 그 키로 만든 여행이 삭제됐으면 `409 TRIP_IDEMPOTENCY_KEY_REUSED`를 반환한다.
@@ -291,6 +293,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >
 > - 검토 제안: `countryCode`가 `ETC`일 때만 `customCountryName`을 필수로 받으며, `countryCode`가 `ETC`가 아니면 `customCountryName`을 생략해야 한다.
 > `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다(`null` 불가).
+> 본문 검증이 고유키 조회보다 먼저 실행되므로, 이미 성공한 고유키로 `countryCode`와 `customCountryName`의 조합이 잘못된 재요청을 보내도 `400 COMMON_INVALID_REQUEST`로 거절한다.
 >
 > 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
 
