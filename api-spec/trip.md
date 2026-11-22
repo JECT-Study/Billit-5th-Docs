@@ -18,8 +18,9 @@
   - [TRIP-10 비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제)
 - [확정과 종료 API](#확정과-종료-api)
   - [TRIP-11 여행 확정](#trip-11-여행-확정)
-  - [TRIP-12 여행 나가기](#trip-12-여행-나가기)
-  - [TRIP-13 여행 삭제](#trip-13-여행-삭제)
+  - [TRIP-12 여행 나가기 전 건수 조회](#trip-12-여행-나가기-전-건수-조회)
+  - [TRIP-13 여행 나가기](#trip-13-여행-나가기)
+  - [TRIP-14 여행 삭제](#trip-14-여행-삭제)
 - [공통 모델](#공통-모델)
   - [TripSummary](#tripsummary)
   - [TripListItem](#triplistitem)
@@ -58,8 +59,9 @@
 | [비로그인 이름 수정](#trip-09-비로그인-이름-수정) | `PATCH` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 | `updateTripGuest` |
 | [비로그인 참여자 삭제](#trip-10-비로그인-참여자-삭제) | `DELETE` | `/api/v1/trips/{tripId}/guests/{tripMemberId}` | 여행 관리자 (여행 확정 전) | `deleteTripGuest` |
 | [여행 확정](#trip-11-여행-확정) | `POST` | `/api/v1/trips/{tripId}/confirm` | 여행 관리자 | `confirmTrip` |
-| [여행 나가기](#trip-12-여행-나가기) | `POST` | `/api/v1/trips/{tripId}/leave` | 여행 참여자 (관리자 제외) | `leaveTrip` |
-| [여행 삭제](#trip-13-여행-삭제) | `DELETE` | `/api/v1/trips/{tripId}` | 여행 관리자 | `deleteTrip` |
+| [여행 나가기 전 건수 조회](#trip-12-여행-나가기-전-건수-조회) | `GET` | `/api/v1/trips/{tripId}/leave-preview` | 여행 참여자 (관리자 제외) | `getTripLeavePreview` |
+| [여행 나가기](#trip-13-여행-나가기) | `POST` | `/api/v1/trips/{tripId}/leave` | 여행 참여자 (관리자 제외) | `leaveTrip` |
+| [여행 삭제](#trip-14-여행-삭제) | `DELETE` | `/api/v1/trips/{tripId}` | 여행 관리자 | `deleteTrip` |
 
 operationId는 백엔드 [API 문서 기준](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-documentation.md#태그와-operationid)의 이름 규칙을 따른다.
 
@@ -1059,7 +1061,72 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 >
 > 출처: [정책](../policy/trip.md#확정-조건) | 기존 검토 DDL `trip.sql`
 
-### TRIP-12 여행 나가기
+### TRIP-12 여행 나가기 전 건수 조회
+
+`GET /api/v1/trips/{tripId}/leave-preview`
+
+#### 인증
+
+로그인한 일반 여행 참여자만 요청할 수 있다.
+Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+
+#### 설명
+
+여행 나가기를 최종 확인하기 전에 요청한 회원의 미정산 지출 건수와 정산중인 정산 건수를 조회한다.
+앱은 이 건수로 나가기 확인 화면의 안내를 표시한다.
+
+#### 요청
+
+##### Path Parameter
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
+
+요청 Body는 보내지 않는다.
+
+#### 성공 응답
+
+HTTP `200 OK`를 반환한다.
+공통 응답의 `data` 필드는 다음과 같다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `unsettledExpenseCount` | Integer | 아니요 | 항상 | 미정산 지출 건수, 0 이상. |
+| `inProgressSettlementCount` | Integer | 아니요 | 항상 | 정산중인 정산 건수, 0 이상. 송금 관계 수가 아니라 정산 수다. |
+
+```json
+{
+  "data": {
+    "unsettledExpenseCount": 3,
+    "inProgressSettlementCount": 1
+  }
+}
+```
+
+#### 오류
+
+> 논의 필요
+>
+> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+>
+> | HTTP | 코드 | 조건 |
+> | --- | --- | --- |
+> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 권한이 없음. 여행 관리자의 요청을 포함 |
+> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+
+#### 처리 규칙
+
+요청한 회원을 기준으로 다음 두 건수를 센다.
+
+- 미정산 지출 건수: 요청한 회원이 결제자나 부담자인 지출 중 정산이 확정되지 않은 지출의 수다. 관리자가 정산을 준비하며 잠근 지출도 확정 전이므로 센다.
+- 정산중인 정산 건수: 요청한 회원이 포함된 정산 중 정산중(`IN_PROGRESS`) 상태인 정산의 수다. 요청한 회원의 송금 관계는 모두 수령 확인됐고 다른 참여자의 관계만 남은 정산도 센다.
+
+두 건수는 안내용이며, 건수가 1건 이상이어도 나가기를 막지 않는다([나가기와 기록 유지](../policy/trip.md#나가기와-기록-유지)와 같은 규칙).
+
+### TRIP-13 여행 나가기
 
 `POST /api/v1/trips/{tripId}/leave`
 
@@ -1107,15 +1174,14 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 #### 처리 규칙
 
-미정산 지출이 있어도 일반 회원의 나가기를 허용한다. 앱이 관리자의 나가기 버튼을 비활성화해도 서버는 요청자의 역할을 다시 확인해 관리자의 나가기 요청을 거절한다. 영향 안내 데이터의 별도 조회 여부는 미정이다. 나간 회원은 나가기 전과 후 언제 정산하든 자신이 포함된 지출의 정산에 포함되며, 정산이 발행되면 내 공간에서 조회할 수 있다. 나간 회원이 수령인인 미확인 송금 관계는 수령 확인 불가로 표시한다([나가기와 기록 유지](../policy/trip.md#나가기와-기록-유지)와 같은 규칙).
+미정산 지출이나 정산중인 정산이 있어도 일반 회원의 나가기를 허용한다.
+앱은 나가기를 최종 확인하기 전에 [여행 나가기 전 건수 조회](#trip-12-여행-나가기-전-건수-조회)로 안내할 건수를 받는다.
+조회한 뒤 건수가 바뀌어도 나가기 요청을 거절하지 않는다.
+앱이 관리자의 나가기 버튼을 비활성화해도 서버는 요청자의 역할을 다시 확인해 관리자의 나가기 요청을 거절한다.
+나간 회원은 나가기 전과 후 언제 정산하든 자신이 포함된 지출의 정산에 포함되며, 정산이 발행되면 내 공간에서 조회할 수 있다.
+나간 회원이 수령인인 미확인 송금 관계는 수령 확인 불가로 표시한다([나가기와 기록 유지](../policy/trip.md#나가기와-기록-유지)와 같은 규칙).
 
-> 논의 필요
->
-> - 미정산 건수와 영향 조회 방식을 결정한다.
->
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
-
-### TRIP-13 여행 삭제
+### TRIP-14 여행 삭제
 
 `DELETE /api/v1/trips/{tripId}`
 
