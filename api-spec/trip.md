@@ -353,6 +353,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >         "memberId": "member-example-a",
 >         "displayName": "민지",
 >         "role": "ADMIN",
+>         "participantStatus": "MEMBER",
 >         "shareAmountKrw": "0.00"
 >       },
 >       {
@@ -360,6 +361,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >         "memberId": "member-example-b",
 >         "displayName": "지훈",
 >         "role": "MEMBER",
+>         "participantStatus": "MEMBER",
 >         "shareAmountKrw": "0.00"
 >       },
 >       {
@@ -367,6 +369,31 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 >         "memberId": null,
 >         "displayName": "서연",
 >         "role": "MEMBER",
+>         "participantStatus": "GUEST",
+>         "shareAmountKrw": "0.00"
+>       },
+>       {
+>         "tripMemberId": "participant-example-d",
+>         "memberId": "member-example-d",
+>         "displayName": "하준",
+>         "role": "MEMBER",
+>         "participantStatus": "LEFT",
+>         "shareAmountKrw": "0.00"
+>       },
+>       {
+>         "tripMemberId": "participant-example-e",
+>         "memberId": null,
+>         "displayName": "탈퇴한 사용자 1",
+>         "role": "MEMBER",
+>         "participantStatus": "WITHDRAWN",
+>         "shareAmountKrw": "0.00"
+>       },
+>       {
+>         "tripMemberId": "participant-example-f",
+>         "memberId": null,
+>         "displayName": "탈퇴한 사용자 2",
+>         "role": "MEMBER",
+>         "participantStatus": "WITHDRAWN",
 >         "shareAmountKrw": "0.00"
 >       }
 >     ]
@@ -391,9 +418,18 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 여행 종료일이 지나도 조회 가능하다. 삭제와 생성자 탈퇴로 차단된 여행은 진입을 차단한다.
 
-참여자 목록은 관리자, 로그인 참여자(참여한 순서), 비로그인 참여자(관리자가 추가한 순서) 순으로 제공한다. 빈자리는 목록에 넣지 않는다. 앱은 총인원(`memberCapacity`)에서 등록 인원(`registeredMemberCount`)을 뺀 수만큼 빈자리를 목록 맨 위에 표시한다. 참여자별 부담액은 참여자 목록의 각 참여자([Participant](#participant))의 `shareAmountKrw`에 담는다. 부담액은 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다([여행 조회](../policy/trip.md#여행-조회)와 같은 규칙).
+참여자 목록에는 나간 회원과 탈퇴 회원도 넣는다.
+목록은 관리자, 로그인 참여자(참여한 순서), 비로그인 참여자(관리자가 추가한 순서), 나간 회원(먼저 나간 순서), 탈퇴 회원(먼저 탈퇴한 순서) 순으로 제공한다.
+탈퇴 회원의 목록 순서는 '탈퇴한 사용자 N'의 번호 순서와 같다.
+빈자리는 목록에 넣지 않는다.
+등록 인원(`registeredMemberCount`)은 참여 중인 로그인 참여자(`MEMBER`)와 비로그인 참여자(`GUEST`)만 센다.
+나간 회원과 탈퇴 회원은 목록에 있어도 등록 인원에 세지 않는다.
+앱은 총인원(`memberCapacity`)에서 등록 인원을 뺀 수만큼 빈자리를 목록 맨 위에 표시한다.
+참여자별 부담액은 참여자 목록의 각 참여자([Participant](#participant))의 `shareAmountKrw`에 담는다.
+부담액은 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다([여행 조회](../policy/trip.md#여행-조회)와 같은 규칙).
 
-참여자 목록만 조회하는 API는 따로 두지 않는다. 참여자 상태는 `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) 네 값으로 구분한다.
+참여자 목록만 조회하는 API는 따로 두지 않는다.
+참여자 상태는 각 참여자의 `participantStatus`로 전달하며, `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) 네 값으로 구분한다.
 
 ### TRIP-04 여행 정보 수정
 
@@ -1264,7 +1300,7 @@ HTTP `200 OK`를 반환한다.
 > | `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 종료일. |
 > | `baseCurrency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 > | `memberCapacity` | Integer | 아니요 | 항상 | 총 정원, 1~10명. |
-> | `registeredMemberCount` | Integer | 아니요 | 항상 | 회원과 비로그인 참여자의 합. 빈자리 제외. |
+> | `registeredMemberCount` | Integer | 아니요 | 항상 | 참여 중인 로그인 참여자(`MEMBER`)와 비로그인 참여자(`GUEST`)의 합. 나간 회원, 탈퇴 회원과 빈자리 제외. |
 > | `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후. |
 > | `myRole` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
 
@@ -1283,7 +1319,7 @@ HTTP `200 OK`를 반환한다.
 | `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
 | `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 종료일. |
 | `memberCapacity` | Integer | 아니요 | 항상 | 총 정원, 1~10명. |
-| `registeredMemberCount` | Integer | 아니요 | 항상 | 회원과 비로그인 참여자의 합. 빈자리 제외. |
+| `registeredMemberCount` | Integer | 아니요 | 항상 | 참여 중인 로그인 참여자(`MEMBER`)와 비로그인 참여자(`GUEST`)의 합. 나간 회원, 탈퇴 회원과 빈자리 제외. |
 | `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후. |
 | `scheduleStatus` | String | 아니요 | 항상 | 여행 카드의 일정 상태. `INVITING`은 참여자 초대중, `UPCOMING`은 여행 예정, `ONGOING`은 진행 중, `ENDED`는 여행 종료. 서버가 요청의 `today`로 `filter`와 같은 기준([여행 상태](../policy/trip.md#여행-상태))에 따라 계산한다. |
 | `myRole` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
@@ -1299,7 +1335,7 @@ HTTP `200 OK`를 반환한다.
 >
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
-> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자 순. 빈자리는 넣지 않는다. |
+> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자, 나간 회원, 탈퇴 회원 순. 빈자리는 넣지 않는다. |
 
 ### TripCreate
 
@@ -1377,10 +1413,16 @@ HTTP `200 OK`를 반환한다.
 > | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 > | --- | --- | --- | --- | --- |
 > | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
-> | `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자이면 null이며, 탈퇴 회원의 값은 보존 정책에 따라 결정한다. |
-> | `displayName` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 이름을 식별자로 사용하지 않는다. |
+> | `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자와 탈퇴 회원이면 null이다. |
+> | `displayName` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 탈퇴 회원이면 서버가 만든 '탈퇴한 사용자 N'이다. 이름을 식별자로 사용하지 않는다. |
 > | `role` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
+> | `participantStatus` | String | 아니요 | 항상 | 참여자 상태. `MEMBER`는 로그인 참여자, `GUEST`는 비로그인 참여자, `LEFT`는 나간 회원, `WITHDRAWN`은 탈퇴 회원이다. |
 > | `shareAmountKrw` | String | 아니요 | 항상 | 참여자별 부담액. 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다. 소수점 이하 2자리 문자열로 전달한다. |
+
+참여자 상태는 `participantStatus`로 전달하며, 값은 DB의 참여자 상태(`trip_member_status`)와 같다([ERD 변경 목록](../design/erd-changes.md#반영할-변경)).
+나간 회원의 `displayName`에는 나가기 전에 쓰던 여행방 닉네임을 담는다.
+탈퇴 회원의 `memberId`는 null이고, `displayName`에는 서버가 만든 '탈퇴한 사용자 N'을 담는다.
+N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대로 1부터 붙이며, 탈퇴 회원이 1명이어도 '탈퇴한 사용자 1'로 보낸다([공동 기록과 미완료 정산](../policy/user.md#공동-기록과-미완료-정산)과 같은 규칙).
 
 ### GuestInput
 
