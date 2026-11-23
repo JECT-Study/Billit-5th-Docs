@@ -139,7 +139,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `today`가 없거나 `YYYY-MM-DD` 형식이 아닌 경우도 포함 |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `today`가 없거나 `YYYY-MM-DD` 형식이 아닌 요청도 포함 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 
 > 논의 필요
@@ -234,7 +234,7 @@ Content-Type: `application/json`
 HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 반환한다. 같은 회원이 같은 고유키로 다시 요청해도 처음과 같이 `201 Created`와 `Location`을 반환하며, `data`에는 처음 만든 여행의 현재 정보를 담는다.
 
 공통 응답의 `data`는 [TripSummary](#tripsummary)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 아래 예시는 제안 필드 범위만 보여준다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
@@ -270,7 +270,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`인데 누락한 경우도 포함 |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`인데 누락한 요청도 포함 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 
 > 논의 필요
@@ -310,7 +310,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 #### 인증
 
-로그인한 회원 중 해당 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 회원 중 그 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -331,7 +331,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [TripDetail](#tripdetail)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다.
 전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
 
@@ -446,7 +446,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -490,7 +490,7 @@ Content-Type: `application/json`
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [TripSummary](#tripsummary)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다.
 전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
 
@@ -531,7 +531,7 @@ HTTP `200 OK`를 반환한다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`로 바꾸면서 누락한 경우도 포함 |
+| 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`로 바꾸면서 누락한 요청도 포함 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
@@ -565,7 +565,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-여행 확정 전, 로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+여행 확정 전, 로그인한 그 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -606,7 +606,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [Invitation](#invitati
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | `tripId`가 여행 ID 형식이 아님 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-| 403 | `COMMON_FORBIDDEN` | 요청한 회원이 해당 여행의 관리자가 아님. 여행에 참여하지 않은 회원도 포함 |
+| 403 | `COMMON_FORBIDDEN` | 요청한 회원이 그 여행의 관리자가 아님. 여행에 참여하지 않은 회원도 포함 |
 | 404 | `COMMON_NOT_FOUND` | `tripId`에 해당하는 여행이 없거나 삭제됨 |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 초대 정보를 요청함 |
 
@@ -783,7 +783,7 @@ Content-Type: `application/json`
 
 #### 인증
 
-여행 확정 전, 로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+여행 확정 전, 로그인한 그 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -814,7 +814,7 @@ Content-Type: `application/json`
 HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Location` 헤더를 반환한다. 주소는 `/api/v1/trips/{tripId}/guests/{tripMemberId}` 형식이다.
 
 공통 응답의 `data`는 [Guest](#guest)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -863,7 +863,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 #### 인증
 
-로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -895,7 +895,7 @@ Content-Type: `application/json`
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [Guest](#guest)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -936,7 +936,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-여행 확정 전, 로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+여행 확정 전, 로그인한 그 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -993,7 +993,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 #### 인증
 
-로그인한 회원 중 해당 여행에 참여하고 있는 회원만 요청할 수 있다.
+로그인한 회원 중 그 여행에 참여하고 있는 회원만 요청할 수 있다.
 Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
@@ -1065,7 +1065,7 @@ HTTP `200 OK`를 반환한다.
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-| 403 | `COMMON_FORBIDDEN` | 로그인했지만 해당 여행의 참여자가 아님. 이미 여행을 나간 회원의 요청을 포함 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 그 여행의 참여자가 아님. 이미 여행을 나간 회원의 요청을 포함 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행이 없거나 삭제됨 |
 
 > 논의 필요
@@ -1093,7 +1093,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -1111,10 +1111,10 @@ HTTP `200 OK`를 반환한다.
 
 #### 성공 응답
 
-확정 요청에는 HTTP `200 OK`와 요청을 처리한 뒤의 여행 확정 상태를 반환한다. 빈자리가 남아 확정하지 못한 경우와 이미 확정된 여행에 다시 요청한 경우도 `409`가 아니라 `200 OK`를 반환한다. 앱은 응답의 `status`로 확정 여부를 판단한다.
+확정 요청에는 HTTP `200 OK`와 요청을 처리한 뒤의 여행 확정 상태를 반환한다. 빈자리가 남아 확정하지 못했거나 이미 확정된 여행에 다시 요청해도 서버는 `409`가 아니라 `200 OK`를 반환한다. 앱은 응답의 `status`로 확정 여부를 판단한다.
 
 공통 응답의 `data`는 [TripConfirmation](#tripconfirmation)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -1318,7 +1318,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -1533,7 +1533,7 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 
 ## 오류 코드
 
-[공통 오류 응답](common.md#오류-응답)을 따른다. 각 API에서 쓰는 조건은 해당 API의 오류 표를 따른다.
+[공통 오류 응답](common.md#오류-응답)을 따른다. 각 API에서 쓰는 조건은 그 API의 오류 표를 따른다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |

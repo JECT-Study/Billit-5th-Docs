@@ -68,7 +68,7 @@ API 식별자는 화면 정의서 식별자와 별개다.
 | [참여자별 정산서](#settle-10-참여자별-정산서) | `GET` | `/api/v1/trips/{tripId}/settlements/{settlementId}/statements/{tripMemberId}` | 여행 참여자 |
 | [내 정산 목록](#settle-11-내-정산-목록) | `GET` | `/api/v1/me/settlement-statements` | 로그인 필요 |
 | [내 정산 상세](#settle-12-내-정산-상세) | `GET` | `/api/v1/me/settlement-statements/{settlementId}` | 로그인 필요 (본인 정산서) |
-| [수령 확인](#settle-13-수령-확인) | `POST` | `/api/v1/trips/{tripId}/settlements/{settlementId}/transfers/{transferId}/receipt-confirmation` | 로그인 필요 (해당 송금의 수령인) |
+| [수령 확인](#settle-13-수령-확인) | `POST` | `/api/v1/trips/{tripId}/settlements/{settlementId}/transfers/{transferId}/receipt-confirmation` | 로그인 필요 (그 송금의 수령인) |
 | [발행 정산 취소](#settle-14-발행-정산-취소) | `POST` | `/api/v1/trips/{tripId}/settlements/{settlementId}/cancel` | 여행 관리자 |
 
 ## 정산 준비 API
@@ -85,7 +85,7 @@ API 식별자는 화면 정의서 식별자와 별개다.
 >
 > 모델의 필드 구성 확정 여부
 
-전체 선택은 현재 필터의 선택 가능한 지출을 대상으로 한다. 앱은 전체 ID를 수집하지 않고 필터 조건과 선택 해제한 지출 ID를 정산 준비 요청에 보낸다. 서버는 같은 여행과 필터에 해당하는 대상에서 제외 ID를 빼고 선택 대상을 구한다. page와 size는 전체 선택 범위를 제한하지 않는다. 전체 선택 시점에 확정한 대상 ID 범위를 유지하며, 이후 새로 등록되거나 필터 조건에 새로 들어온 지출은 자동 포함하지 않는다. 선택 대상에서 제외한 ID는 이 범위에서 제거한다. 선택된 ID의 금액과 품목 등 내용이 이후 수정됐더라도 변경 확인을 다시 요구하지 않고 정산 준비 시점의 최신 저장값을 사용한다. 결제일이 바뀌어도 선택 시점의 ID 범위를 다시 필터링하지 않는다. 삭제, 수정 잠금과 다른 정산 포함 여부는 준비 시작 시 다시 검증한다.
+전체 선택은 현재 필터의 선택 가능한 지출을 대상으로 한다. 앱은 전체 ID를 수집하지 않고 필터 조건과 선택 해제한 지출 ID를 정산 준비 요청에 보낸다. 서버는 같은 여행과 필터에 해당하는 대상에서 제외 ID를 빼고 선택 대상을 구한다. page와 size는 전체 선택 범위를 제한하지 않는다. 전체 선택 시점에 확정한 대상 ID 범위를 유지하며, 이후 새로 등록되거나 필터 조건에 새로 들어온 지출은 자동 포함하지 않는다. 선택 대상에서 제외한 ID는 이 범위에서 제거한다. 선택된 ID의 금액과 품목 같은 내용이 이후 수정됐더라도 변경 확인을 다시 요구하지 않고 정산 준비 시점의 최신 저장값을 사용한다. 결제일이 바뀌어도 선택 시점의 ID 범위를 다시 필터링하지 않는다. 삭제, 수정 잠금과 다른 정산 포함 여부는 준비 시작 시 다시 검증한다.
 
 > 논의 필요
 >
@@ -101,7 +101,7 @@ API 식별자는 화면 정의서 식별자와 별개다.
 
 #### 인증
 
-여행 확정 후, 로그인한 해당 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+여행 확정 후, 로그인한 그 여행의 관리자만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -135,7 +135,7 @@ Content-Type: `application/json`
 HTTP `201 Created`를 반환한다.
 
 공통 응답의 `data`는 [Preparation](#preparation)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -161,7 +161,7 @@ HTTP `201 Created`를 반환한다.
 
 > 논의 필요
 >
-> 조회 경로를 아직 정의하지 않은 자원은 해당 경로를 함께 확정해야 한다.
+> 조회 경로를 아직 정의하지 않은 자원은 그 경로를 함께 확정해야 한다.
 
 #### 오류
 
@@ -199,7 +199,7 @@ HTTP `201 Created`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -212,7 +212,7 @@ HTTP `201 Created`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 요청 Body는 보내지 않는다.
 
@@ -221,7 +221,7 @@ HTTP `201 Created`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [PreparationView](#preparationview)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -274,7 +274,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -287,7 +287,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 ##### Header
 
@@ -306,7 +306,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [LockExpiry](#lockexpiry)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -351,7 +351,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -364,7 +364,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 ##### Header
 
@@ -418,11 +418,11 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
-정산 방식에 따른 부담액과 잔액 및 송금 내역를 미리 계산한다.
+정산 방식에 따른 부담액과 잔액, 송금 내역를 미리 계산한다.
 
 #### 요청
 
@@ -431,7 +431,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 ##### Header
 
@@ -460,7 +460,7 @@ Content-Type: `application/json`
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [SettlementPreview](#settlementpreview)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -542,7 +542,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자 중 현재 정산 준비를 시작한 사용자만 요청할 수 있다. 잠금 토큰으로 같은 정산 준비인지 확인한다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -555,7 +555,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 ##### Header
 
@@ -577,7 +577,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [SettlementDetail](#settlementdetail)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -656,7 +656,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 회원 중 해당 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 회원 중 그 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -672,7 +672,7 @@ HTTP `200 OK`를 반환한다.
 
 ##### Query Parameter
 
-선택 필터를 생략하면 해당 조건을 적용하지 않는다.
+선택 필터를 생략하면 그 조건을 적용하지 않는다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
@@ -687,7 +687,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 Array&lt;[SettlementSummary](#settlementsummary)&gt;이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -753,7 +753,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 회원 중 해당 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 회원 중 그 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -766,7 +766,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 요청 Body는 보내지 않는다.
 
@@ -775,7 +775,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [SettlementDetail](#settlementdetail)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -849,7 +849,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 회원 중 해당 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 회원 중 그 여행에 참여하고 여행방에 접근할 수 있는 회원만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -862,7 +862,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `tripMemberId` | String | 필수 | 없음 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 
 요청 Body는 보내지 않는다.
@@ -872,7 +872,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [Statement](#statement)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -970,7 +970,7 @@ HTTP `200 OK`를 반환한다.
 
 ##### Query Parameter
 
-선택 필터를 생략하면 해당 조건을 적용하지 않는다.
+선택 필터를 생략하면 그 조건을 적용하지 않는다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
@@ -985,7 +985,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 Array&lt;[StatementSummary](#statementsummary)&gt;이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -1064,7 +1064,7 @@ HTTP `200 OK`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 요청 Body는 보내지 않는다.
 
@@ -1073,7 +1073,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [Statement](#statement)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -1164,7 +1164,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 회원 중 해당 송금에서 돈을 받는 사람만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 회원 중 그 송금에서 돈을 받는 사람만 요청할 수 있다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -1177,7 +1177,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `transferId` | String | 필수 | 없음 | 정산에 포함된 개별 송금 내역 ID. 송금인과 수령인, 통화와 금액을 구분한다. |
 
 요청 Body는 보내지 않는다.
@@ -1187,7 +1187,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [ReceiptConfirmation](#receiptconfirmation)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -1239,7 +1239,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-로그인한 해당 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+로그인한 그 여행의 관리자만 요청할 수 있다. 여행 생성자가 관리자다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
@@ -1252,7 +1252,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
 | `tripId` | String | 필수 | 없음 | 여행 ID. 문자열로 전달한다. |
-| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 필수 | 없음 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 
 요청 Body는 보내지 않는다.
 
@@ -1261,7 +1261,7 @@ HTTP `200 OK`를 반환한다.
 HTTP `200 OK`를 반환한다.
 
 공통 응답의 `data`는 [SettlementCancellation](#settlementcancellation)이다.
-필드 정의는 해당 모델을 따른다.
+필드 정의는 그 모델을 따른다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -1303,7 +1303,7 @@ HTTP `200 OK`를 반환한다.
 
 > 논의 필요
 >
-> - 아래 일반 정산 모델 외에 탈퇴 및 삭제에 따른 응답 축약 계약이 필요하다.
+> - 아래 일반 정산 모델 외에 탈퇴, 삭제에 따른 응답 축약 계약이 필요하다.
 > - 여행명 보존을 위한 `tripName`, 일부 기록 삭제 안내를 위한 `hasDeletedRecords`, 삭제 시 총 송금액 비노출을 위한 별도 총 송금액 필드와 포함 조건을 검토한다.
 > - `totals`의 지출 총액과 총 송금액을 혼용하지 않는다.
 > - 삭제된 송금 관계는 배열에서 제외하고, 탈퇴자의 표시 이름은 여행 내에서 번호로 구분한다.
@@ -1319,7 +1319,7 @@ HTTP `200 OK`를 반환한다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `expenseId` | String | 아니요 | 항상 | 지출 ID. 경로에 tripId가 있으면 해당 여행에 속한 지출이어야 한다. |
+| `expenseId` | String | 아니요 | 항상 | 지출 ID. 경로에 tripId가 있으면 그 여행에 속한 지출이어야 한다. |
 | `name` | String | 아니요 | 항상 | 지출명. 말줄임은 표시 시 처리한다. |
 | `paidDate` | String | 아니요 | 항상 | YYYY-MM-DD. 결제 날짜. |
 | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
@@ -1340,7 +1340,7 @@ HTTP `200 OK`를 반환한다.
 | `excludedExpenseIds` | Array&lt;String&gt; | 조건부 | 없음 | FILTER일 때 선택 해제한 지출 ID. 제외할 것이 없으면 빈 배열. EXPLICIT에서는 보내지 않음 |
 
 FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장하지 않는다.
-전체 선택 시 확정한 범위를 식별할 값이 추가로 필요하며, 선택 토큰 또는 서버 선택 기록 등 구체적인 계약은 별도 설계한다.
+전체 선택 시 확정한 범위를 식별할 값이 추가로 필요하며, 선택 토큰이나 서버 선택 기록 같은 구체적인 계약은 별도 설계한다.
 필터와 제외 ID만으로 시점 보존이 보장된다고 가정하지 않는다.
 
 두 선택 방식을 혼합하지 않는다.
@@ -1356,7 +1356,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `status` | String | 아니요 | 항상 | 발행 전 준비 상태인 `DRAFT`를 반환한다. |
 | `expenseIds` | Array&lt;String&gt; | 아니요 | 항상 | 현재 준비 중인 정산의 대상으로 잠근 지출 ID 목록. |
 | `settlementMethod` | String | 예 | 항상 | KRW_UNIFIED는 원화 통합, BY_CURRENCY는 결제 통화별 정산이다. 아직 선택하지 않았으면 null. |
@@ -1368,7 +1368,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `status` | String | 아니요 | 항상 | 발행 전 준비 상태인 `DRAFT`를 반환한다. |
 | `expenseIds` | Array&lt;String&gt; | 아니요 | 항상 | 현재 준비 중인 정산의 대상으로 잠근 지출 ID 목록. |
 | `settlementMethod` | String | 예 | 항상 | KRW_UNIFIED는 원화 통합, BY_CURRENCY는 결제 통화별 정산이다. 아직 선택하지 않았으면 null. |
@@ -1391,7 +1391,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `settlementMethod` | String | 아니요 | 항상 | `KRW_UNIFIED`는 원화 통합 정산, `BY_CURRENCY`는 결제 통화별 정산이다. |
 | `expenseCount` | Integer | 아니요 | 항상 | 선택 지출 건수, 1 이상. |
 | `totals` | Array&lt;[CurrencyTotal](#currencytotal)&gt; | 아니요 | 항상 | 정산 통화별 합계. |
@@ -1403,7 +1403,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
 | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-| `amount` | String | 아니요 | 항상 | 해당 통화의 총액. 소수점 이하 2자리 문자열로 전달한다. |
+| `amount` | String | 아니요 | 항상 | 그 통화의 총액. 소수점 이하 2자리 문자열로 전달한다. |
 
 ### Balance
 
@@ -1411,8 +1411,8 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 | --- | --- | --- | --- | --- |
 | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
 | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-| `paidAmount` | String | 아니요 | 항상 | 해당 참여자의 결제 합계. 소수점 이하 2자리 문자열로 전달한다. |
-| `shareAmount` | String | 아니요 | 항상 | 해당 참여자의 부담 합계. 소수점 이하 2자리 문자열로 전달한다. |
+| `paidAmount` | String | 아니요 | 항상 | 그 참여자의 결제 합계. 소수점 이하 2자리 문자열로 전달한다. |
+| `shareAmount` | String | 아니요 | 항상 | 그 참여자의 부담 합계. 소수점 이하 2자리 문자열로 전달한다. |
 | `balance` | String | 아니요 | 항상 | 결제액에서 부담액을 뺀 정산 잔액. 받을 돈은 양수, 보낼 돈은 음수이며 계좌 잔고를 뜻하지 않는다. 소수점 이하 2자리 문자열로 전달한다. |
 
 ### TransferPreview
@@ -1428,7 +1428,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 | `status` | String | 아니요 | 항상 | `IN_PROGRESS`, `COMPLETED`, 발행 후 취소 상태인 `CANCELED`를 반환한다. |
 | `settlementMethod` | String | 아니요 | 항상 | `KRW_UNIFIED`는 원화 통합 정산, `BY_CURRENCY`는 결제 통화별 정산이다. |
@@ -1454,7 +1454,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 | `status` | String | 아니요 | 항상 | `IN_PROGRESS`, `COMPLETED`, 발행 후 취소 상태인 `CANCELED`를 반환한다. |
 | `settlementMethod` | String | 아니요 | 항상 | `KRW_UNIFIED`는 원화 통합 정산, `BY_CURRENCY`는 결제 통화별 정산이다. |
@@ -1466,7 +1466,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 | `status` | String | 아니요 | 항상 | `IN_PROGRESS`, `COMPLETED`, 발행 후 취소 상태인 `CANCELED`를 반환한다. |
 | `settlementMethod` | String | 아니요 | 항상 | `KRW_UNIFIED`는 원화 통합 정산, `BY_CURRENCY`는 결제 통화별 정산이다. |
@@ -1474,27 +1474,27 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 | `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 정산 확정과 발행 시각. |
 | `totals` | Array&lt;[CurrencyTotal](#currencytotal)&gt; | 아니요 | 항상 | 통화별 총액. |
 | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
-| `balances` | Array&lt;[Balance](#balance)&gt; | 아니요 | 항상 | 해당 참여자의 결제액과 부담액 및 잔액. |
-| `transfers` | Array&lt;[Transfer](#transfer)&gt; | 아니요 | 항상 | 해당 참여자가 보내거나 받는 관계. |
+| `balances` | Array&lt;[Balance](#balance)&gt; | 아니요 | 항상 | 그 참여자의 결제액과 부담액, 잔액. |
+| `transfers` | Array&lt;[Transfer](#transfer)&gt; | 아니요 | 항상 | 그 참여자가 보내거나 받는 관계. |
 | `expenses` | Array&lt;[StatementExpense](#statementexpense)&gt; | 아니요 | 항상 | 결제 날짜 오름차순, 동률 지출 ID 기준 제안. |
 
 ### StatementExpense
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `expenseId` | String | 아니요 | 항상 | 지출 ID. 경로에 tripId가 있으면 해당 여행에 속한 지출이어야 한다. |
+| `expenseId` | String | 아니요 | 항상 | 지출 ID. 경로에 tripId가 있으면 그 여행에 속한 지출이어야 한다. |
 | `paidDate` | String | 아니요 | 항상 | YYYY-MM-DD. 결제 날짜, 오름차순. |
 | `paymentMethod` | String | 아니요 | 항상 | `CARD`는 일반 카드, `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
 | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 | `exchangeRate` | String | 아니요 | 항상 | 저장 당시 환율. 소수점 이하 2자리 문자열로 전달한다. |
 | `amount` | String | 아니요 | 항상 | 지출 총액. 소수점 이하 2자리 문자열로 전달한다. |
-| `shareAmount` | String | 아니요 | 항상 | 해당 정산서 참여자의 부담액. 소수점 이하 2자리 문자열로 전달한다. |
+| `shareAmount` | String | 아니요 | 항상 | 그 정산서 참여자의 부담액. 소수점 이하 2자리 문자열로 전달한다. |
 
 ### StatementSummary
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
 | `status` | String | 아니요 | 항상 | `IN_PROGRESS`, `COMPLETED`, 발행 후 취소 상태인 `CANCELED`를 반환한다. |
 | `settlementMethod` | String | 아니요 | 항상 | `KRW_UNIFIED`는 원화 통합 정산, `BY_CURRENCY`는 결제 통화별 정산이다. |
@@ -1509,14 +1509,14 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 | --- | --- | --- | --- | --- |
 | `transferId` | String | 아니요 | 항상 | 정산에 포함된 개별 송금 내역 ID. 송금인과 수령인, 통화와 금액을 구분한다. |
 | `receivedAt` | String | 아니요 | 항상 | ISO 8601 UTC. 수령 확인 시각. |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `status` | String | 아니요 | 항상 | 아직 확인할 송금이 남으면 `IN_PROGRESS`, 완료 조건을 충족하면 `COMPLETED`다. |
 
 ### SettlementCancellation
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 해당 여행의 정산이어야 한다. |
+| `settlementId` | String | 아니요 | 항상 | 정산 ID. 경로에 tripId가 있으면 그 여행의 정산이어야 한다. |
 | `status` | String | 아니요 | 항상 | 발행 후 취소 상태인 `CANCELED`를 반환한다. |
 
 ## 오류 코드
