@@ -311,7 +311,7 @@ HTTP `200 OK`를 반환한다.
 > 논의 필요
 >
 > - 경로, 요청, 응답과 오류 코드의 확정 여부
-> - 이 API는 제공 범위 또는 구현 방식 결정 후 채택한다.
+> - 제공 범위나 구현 방식을 정한 뒤의 채택 여부
 
 #### 인증
 
@@ -398,12 +398,13 @@ HTTP `200 OK`를 반환한다.
 
 ## 개인 기록 변경 API 후보
 
+개인 환율의 수정과 삭제를 제공하기로 정하면 `PATCH /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`와 `DELETE /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`를 둔다.
+1차 MVP에서 서버는 직접 수정한 환율을 개인 환율 기록에 자동 저장한다([개인 환율 기록](../policy/exchange-rate.md#개인-환율-기록), [지출 환율](../policy/exchange-rate.md#지출-환율)).
+
 > 논의 필요
 >
-> - 개인 환율 수정과 삭제 제공 여부를 먼저 결정한다.
-> - 채택 시 `PATCH`와 `DELETE /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`를 검토한다.
-> - 수동 수정값의 자동 저장은 1차 MVP에 포함한다.
-> - 자동 저장 시점, 지출 저장 API와의 연계, 중복 시 응답은 추가로 결정한다.
+> - 개인 환율의 수정과 삭제 제공 여부
+> - 자동 저장 시점, 지출 저장 API와의 연계, 중복 저장 때의 응답
 
 ## 공통 모델
 

@@ -148,6 +148,7 @@ Access Token은 15분, 새 Refresh Token은 30일간 유효하다.
 
 #### 처리 규칙
 
+업무 규칙은 [인증 유지 정책](../policy/authentication.md#인증-유지)을 따른다.
 갱신에 성공하면 서버는 새 Access Token과 Refresh Token을 발급한다.
 갱신에 성공하면 서버는 사용한 기존 Refresh Token을 폐기한다.
 서버는 기존 토큰의 폐기와 새 Refresh Token의 발급을 하나의 갱신으로 함께 처리한다.
