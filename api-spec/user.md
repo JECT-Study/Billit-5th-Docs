@@ -166,9 +166,12 @@ Content-Type: `application/json`
 
 HTTP `200 OK`를 반환한다.
 
-회원 ID와 가입 완료 여부의 응답 필드는 별도로 확정한다.
+응답 본문의 `data` 필드는 다음과 같다.
 
-회원용 토큰은 응답 Body의 `data`에 담아 반환한다. 아래 예시는 합의된 토큰 필드만 보여준다. 회원 ID와 가입 완료 여부를 포함한 전체 응답 예시는 그 필드의 계약을 확정한 뒤 작성한다.
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `accessToken` | String | 아니요 | 항상 | 회원용 Access Token |
+| `refreshToken` | String | 아니요 | 항상 | 회원용 Refresh Token |
 
 ```json
 {
