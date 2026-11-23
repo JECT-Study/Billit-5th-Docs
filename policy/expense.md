@@ -58,7 +58,7 @@
 
 > 논의 필요
 >
-> 지출 임시 저장의 1차 MVP 반영 범위, 필수값과 저장 및 복원 조건 ([#24](https://github.com/JECT-Study/Billit-5th-Docs/issues/24))
+> 지출 임시 저장의 1차 MVP 반영 범위, 필수값, 저장 조건과 복원 조건 ([#24](https://github.com/JECT-Study/Billit-5th-Docs/issues/24))
 
 적용 환율과 기본값은 [환율 정책](exchange-rate.md#지출-환율)을 따른다.
 
