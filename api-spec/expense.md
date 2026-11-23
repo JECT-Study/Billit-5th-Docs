@@ -1042,7 +1042,7 @@ JSON Part `request`의 필드 후보:
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `name` | String | 필수 | 없음 | 필수 지출명. 정책의 입력 무제한과 DDL 길이 제한 충돌은 논의 필요. |
+| `name` | String | 필수 | 없음 | 필수 지출명. 정책의 입력 무제한과 [DB 컬럼](../design/expense.md#저장-데이터)의 길이 제한 충돌은 논의 필요. |
 | `splitType` | String | 필수 | 없음 | `EQUAL`은 전체 1/N, `BY_ITEM`은 품목별 분배다. |
 | `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 | `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
