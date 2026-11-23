@@ -61,7 +61,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
 | `status` | String | 아니요 | 항상 | 가입 미완료 상태인 `SIGNING_UP`을 반환한다. |
-| `terms` | Array&lt;RegistrationTerms&gt; | 아니요 | 항상 | 가입 화면에서 표시할 필수 및 선택 약관 목록. |
+| `terms` | Array&lt;RegistrationTerms&gt; | 아니요 | 항상 | 가입 화면에서 표시할 필수, 선택 약관 목록. |
 
 **RegistrationTerms**
 
@@ -70,7 +70,7 @@ HTTP `200 OK`를 반환한다.
 | `termsId` | String | 아니요 | 항상 | 약관 버전 식별자. 가입 완료 요청의 동의 항목에 같은 값을 보낸다. |
 | `title` | String | 아니요 | 항상 | 약관 제목 |
 | `isRequired` | Boolean | 아니요 | 항상 | 가입에 필요한 필수 약관인지 여부 |
-| `contentUrl` | String | 아니요 | 항상 | 해당 버전의 약관 전문 URL |
+| `contentUrl` | String | 아니요 | 항상 | 그 버전의 약관 전문 URL |
 
 ```json
 {
@@ -109,7 +109,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-최초 요청은 소셜 로그인을 마친 가입 미완료 사용자에게 허용한다. 가입 완료 응답을 받지 못한 경우에는 같은 가입 요청의 토큰 수령 재시도를 허용한다. [가입 전용 토큰](../design/authentication.md#가입-전용-토큰)으로 본인을 확인한다. 토큰은 `Authorization: Bearer {registrationToken}`으로 전달한다.
+최초 요청은 소셜 로그인을 마친 가입 미완료 사용자에게 허용한다. 가입 완료 응답을 받지 못하면 같은 가입 요청의 토큰 수령 재시도를 허용한다. [가입 전용 토큰](../design/authentication.md#가입-전용-토큰)으로 본인을 확인한다. 토큰은 `Authorization: Bearer {registrationToken}`으로 전달한다.
 
 #### 설명
 
@@ -128,7 +128,7 @@ Content-Type: `application/json`
 | `appVersion` | String | 필수 | 없음 | 약관에 동의한 시점의 앱 버전. 1~20자. 약관 동의 기록에 저장한다. |
 | `agreements` | Array | 필수 | 없음 | 앱에 표시한 약관 버전별 동의 여부 |
 | `agreements[].termsId` | String | 필수 | 없음 | 앱에 표시한 약관 버전의 식별자 |
-| `agreements[].isAgreed` | Boolean | 필수 | 없음 | 해당 버전에 대한 동의 여부 |
+| `agreements[].isAgreed` | Boolean | 필수 | 없음 | 그 버전에 대한 동의 여부 |
 | `survey` | Object | 선택 | 없음 | 선택 설문. 응답하지 않으면 생략한다. |
 | `survey.gender` | String | 선택 | 없음 | 선택한 성별 코드 |
 | `survey.isTripOrganizer` | Boolean | 선택 | 없음 | 여행 총무 여부 |
@@ -168,7 +168,7 @@ HTTP `200 OK`를 반환한다.
 
 회원 ID와 가입 완료 여부의 응답 필드는 별도로 확정한다.
 
-회원용 토큰은 응답 Body의 `data`에 담아 반환한다. 아래 예시는 합의된 토큰 필드만 보여준다. 회원 ID와 가입 완료 여부를 포함한 전체 응답 예시는 해당 필드의 계약을 확정한 뒤 작성한다.
+회원용 토큰은 응답 Body의 `data`에 담아 반환한다. 아래 예시는 합의된 토큰 필드만 보여준다. 회원 ID와 가입 완료 여부를 포함한 전체 응답 예시는 그 필드의 계약을 확정한 뒤 작성한다.
 
 ```json
 {
@@ -392,7 +392,7 @@ HTTP `200 OK`를 반환한다.
 
 #### 설명
 
-최종 확인한 회원의 탈퇴를 처리하고 해당 계정의 접근을 차단한다.
+최종 확인한 회원의 탈퇴를 처리하고 그 계정의 접근을 차단한다.
 
 #### 요청
 
@@ -430,7 +430,7 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 
 ## 오류 코드
 
-아래는 개별 API에 사용한 코드의 대응표다. 가입 API와 검토 중인 프로필 및 탈퇴 API의 상태는 각 절을 따른다. 프로필 이미지의 허용 형식과 용량은 확정된 값이 아니다.
+아래는 개별 API에 사용한 코드의 대응표다. 가입 API와 검토 중인 프로필, 탈퇴 API의 상태는 각 절을 따른다. 프로필 이미지의 허용 형식과 용량은 확정된 값이 아니다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |

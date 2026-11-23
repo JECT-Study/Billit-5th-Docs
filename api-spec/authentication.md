@@ -182,7 +182,7 @@ Refresh Token이 유효하지 않다는 `401` 응답을 받으면 앱은 다시 
 
 #### 설명
 
-현재 기기에서 로그아웃하고 해당 기기의 기존 Access Token을 즉시 차단한다. 다른 기기의 로그인은 유지한다.
+현재 기기에서 로그아웃하고 그 기기의 기존 Access Token을 즉시 차단한다. 다른 기기의 로그인은 유지한다.
 
 #### 요청
 
@@ -194,7 +194,7 @@ Access Token이 만료됐다면 Authorization 헤더를 생략하고, 유효한 
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `Authorization` | String | 조건부 | 없음 | 유효한 Access Token을 사용하는 경우 `Bearer {accessToken}`으로 전달한다. Refresh Token으로 요청하면 생략한다. |
+| `Authorization` | String | 조건부 | 없음 | 유효한 Access Token을 쓰면 `Bearer {accessToken}`으로 전달한다. Refresh Token으로 요청하면 생략한다. |
 
 ##### Body
 
@@ -202,7 +202,7 @@ Content-Type: `application/json`
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `refreshToken` | String | 조건부 | 없음 | Access Token이 만료된 경우 필수다. 유효한 Access Token으로 요청하면 Body를 보내지 않는다. |
+| `refreshToken` | String | 조건부 | 없음 | Access Token이 만료되었으면 필수다. 유효한 Access Token으로 요청하면 Body를 보내지 않는다. |
 
 ```json
 {"refreshToken": "example-refresh-token"}
@@ -217,9 +217,9 @@ HTTP `204 No Content`를 반환한다. 응답 본문은 없다.
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 요청 형식이 올바르지 않음 |
-| 401 | `COMMON_UNAUTHORIZED` | 세션을 확인할 유효한 토큰이 없거나 해당 세션이 이미 종료됨 |
+| 401 | `COMMON_UNAUTHORIZED` | 세션을 확인할 유효한 토큰이 없거나 그 세션이 이미 종료됨 |
 
-이미 종료된 세션으로 다시 요청해 `401`을 받으면 앱은 로컬에 남은 해당 세션의 토큰을 정리한다.
+이미 종료된 세션으로 다시 요청해 `401`을 받으면 앱은 로컬에 남은 그 세션의 토큰을 정리한다.
 
 #### 처리 규칙
 
@@ -239,14 +239,14 @@ HTTP `204 No Content`를 반환한다. 응답 본문은 없다.
 
 ## 오류 코드
 
-아래는 개별 API에 사용한 코드의 대응표다. 합의 여부와 미결인 매핑은 해당 API의 상태 표시를 따르며, OpenAPI 반영 여부는 [API 계약 관리 기준](<../guide/API 스펙 문서 가이드.md#계약-원본과-문서의-역할>)에 따라 별도로 확인한다.
+아래는 개별 API에 사용한 코드의 대응표다. 합의 여부와 미결인 매핑은 그 API의 상태 표시를 따르며, OpenAPI 반영 여부는 [API 계약 관리 기준](<../guide/API 스펙 문서 가이드.md#계약-원본과-문서의-역할>)에 따라 별도로 확인한다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수 필드가 없거나 요청 형식이 올바르지 않다. |
 | 401 | `AUTH_SOCIAL_AUTHENTICATION_FAILED` | ID 토큰 또는 Apple 인가 코드 검증에 실패한다. |
 | 401 | `AUTH_REFRESH_TOKEN_INVALID` | Refresh Token이 만료되거나 유효하지 않다. 이미 갱신에 사용한 토큰도 포함한다. |
-| 401 | `COMMON_UNAUTHORIZED` | 세션을 확인할 유효한 토큰이 없거나 해당 세션이 이미 종료됐다. |
+| 401 | `COMMON_UNAUTHORIZED` | 세션을 확인할 유효한 토큰이 없거나 그 세션이 이미 종료됐다. |
 | 403 | `COMMON_FORBIDDEN` | 인증된 사용자에게 요청을 수행할 권한이 없다. |
 | 503 | `AUTH_SOCIAL_PROVIDER_UNAVAILABLE` | 소셜 제공자 장애나 타임아웃으로 로그인할 수 없다. |
 
