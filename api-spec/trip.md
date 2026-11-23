@@ -41,9 +41,11 @@
 
 여행 확정 상태와 일정 상태를 구분한다. 관리자는 생성자이며 권한 양도는 MVP 범위가 아니다.
 
-[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/trip.md)
 
-이 문서는 API 스펙 검토용 초안이다. API 식별자는 화면 정의서 식별자와 별개다. 팀에서 확정한 계약은 본문에 작성하고, 아직 검토 중인 경로, 요청과 응답 필드 및 오류 코드는 각 API의 `논의 필요` 인용문 안에 제안 모델과 예시로 구분한다.
+이 문서는 API 스펙 검토용 초안이다.
+API 식별자는 화면 정의서 식별자와 별개다.
+경로, 요청과 응답 필드, 오류 코드를 팀에서 확정하지 않은 API나 모델은 그 위치에 `논의 필요`로 표시한다.
 
 ## API 목록
 
@@ -133,14 +135,16 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 
 #### 오류
 
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `today`가 없거나 `YYYY-MM-DD` 형식이 아닌 경우도 포함 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `today`가 없거나 `YYYY-MM-DD` 형식이 아닌 경우도 포함 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -166,8 +170,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 
 > 논의 필요
 >
-> 요청과 응답 모델의 필드 구성은 검토 제안이다.
-> 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
+> 요청과 응답 모델의 필드 구성의 확정 여부
 
 #### 인증
 
@@ -187,70 +190,70 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 Array&lt;[TripListItem
 
 ##### Body
 
+Content-Type: `application/json`
+
+요청 필드: [TripCreate](#tripcreate).
+
+```json
+{
+  "name": "도쿄 여행",
+  "countryCode": "JP",
+  "baseCurrency": "JPY",
+  "startDate": "2026-11-05",
+  "endDate": "2026-11-07",
+  "memberCapacity": 3,
+  "tripNickname": "민지"
+}
+```
+
+기타 국가를 선택한 예시:
+
+```json
+{
+  "name": "하노이 여행",
+  "countryCode": "ETC",
+  "customCountryName": "베트남",
+  "baseCurrency": "USD",
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-04",
+  "memberCapacity": 4,
+  "tripNickname": "민지"
+}
+```
+
 > 논의 필요
 >
-> 다음 요청 예시는 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> 요청 필드: [TripCreate](#tripcreate).
->
-> ```json
-> {
->   "name": "도쿄 여행",
->   "countryCode": "JP",
->   "baseCurrency": "JPY",
->   "startDate": "2026-11-05",
->   "endDate": "2026-11-07",
->   "memberCapacity": 3,
->   "tripNickname": "민지"
-> }
-> ```
->
-> 기타 국가를 선택한 예시:
->
-> ```json
-> {
->   "name": "하노이 여행",
->   "countryCode": "ETC",
->   "customCountryName": "베트남",
->   "baseCurrency": "USD",
->   "startDate": "2026-12-01",
->   "endDate": "2026-12-04",
->   "memberCapacity": 4,
->   "tripNickname": "민지"
-> }
-> ```
+> 다음 요청 예시의 확정 여부
 
 #### 성공 응답
 
 HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 반환한다. 같은 회원이 같은 고유키로 다시 요청해도 처음과 같이 `201 Created`와 `Location`을 반환하며, `data`에는 처음 만든 여행의 현재 정보를 담는다.
 
-> 논의 필요
->
-> 공통 응답의 `data`는 [TripSummary](#tripsummary)이다. 필드 정의는 해당 모델을 따른다. 아래 예시는 제안 필드 범위만 보여준다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [TripSummary](#tripsummary) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "name": "도쿄 여행",
->     "countryCode": "JP",
->     "customCountryName": null,
->     "startDate": "2026-11-05",
->     "endDate": "2026-11-07",
->     "baseCurrency": "JPY",
->     "memberCapacity": 3,
->     "registeredMemberCount": 1,
->     "status": "UNCONFIRMED",
->     "myRole": "ADMIN"
->   }
-> }
-> ```
+공통 응답의 `data`는 [TripSummary](#tripsummary)이다.
+필드 정의는 해당 모델을 따른다.
+아래 예시는 제안 필드 범위만 보여준다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [TripSummary](#tripsummary) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "name": "도쿄 여행",
+    "countryCode": "JP",
+    "customCountryName": null,
+    "startDate": "2026-11-05",
+    "endDate": "2026-11-07",
+    "baseCurrency": "JPY",
+    "memberCapacity": 3,
+    "registeredMemberCount": 1,
+    "status": "UNCONFIRMED",
+    "myRole": "ADMIN"
+  }
+}
+```
 
 #### 오류
 
@@ -261,14 +264,14 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 | 400 | `COMMON_INVALID_REQUEST` | `Idempotency-Key`가 없거나 UUID 형식이 아님 |
 | 409 | `TRIP_IDEMPOTENCY_KEY_REUSED` | 다른 회원이 이미 사용한 고유키이거나, 그 키로 만든 여행이 삭제됨 |
 
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`인데 누락한 경우도 포함 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`인데 누락한 경우도 포함 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -287,10 +290,8 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 > 논의 필요
 >
 > - 검토 제안: `countryCode`가 `ETC`일 때만 `customCountryName`을 필수로 받으며, `countryCode`가 `ETC`가 아니면 `customCountryName`을 생략해야 한다.
-> `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다(`null` 불가).
-> 본문 검증이 고유키 조회보다 먼저 실행되므로, 이미 성공한 고유키로 `countryCode`와 `customCountryName`의 조합이 잘못된 재요청을 보내도 `400 COMMON_INVALID_REQUEST`로 거절한다.
->
-> 출처: [정책](../policy/trip.md#여행-생성) | 기존 검토 DDL `trip.sql`
+> - `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다(`null` 불가).
+> - 본문 검증이 고유키 조회보다 먼저 실행되므로, 이미 성공한 고유키로 `countryCode`와 `customCountryName`의 조합이 잘못된 재요청을 보내도 `400 COMMON_INVALID_REQUEST`로 거절한다.
 
 ### TRIP-03 여행 상세
 
@@ -298,8 +299,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -321,96 +321,95 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [TripDetail](#tripdetail)이다. 필드 정의는 해당 모델을 따른다. 이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다. 전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [TripDetail](#tripdetail) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "name": "도쿄 여행",
->     "countryCode": "JP",
->     "customCountryName": null,
->     "startDate": "2026-11-05",
->     "endDate": "2026-11-07",
->     "baseCurrency": "JPY",
->     "memberCapacity": 3,
->     "registeredMemberCount": 3,
->     "status": "UNCONFIRMED",
->     "myRole": "ADMIN",
->     "participants": [
->       {
->         "tripMemberId": "participant-example-a",
->         "memberId": "member-example-a",
->         "tripNickname": "민지",
->         "role": "ADMIN",
->         "participantStatus": "MEMBER",
->         "shareAmountKrw": "0.00"
->       },
->       {
->         "tripMemberId": "participant-example-b",
->         "memberId": "member-example-b",
->         "tripNickname": "지훈",
->         "role": "MEMBER",
->         "participantStatus": "MEMBER",
->         "shareAmountKrw": "0.00"
->       },
->       {
->         "tripMemberId": "participant-example-c",
->         "memberId": null,
->         "tripNickname": "서연",
->         "role": "MEMBER",
->         "participantStatus": "GUEST",
->         "shareAmountKrw": "0.00"
->       },
->       {
->         "tripMemberId": "participant-example-d",
->         "memberId": "member-example-d",
->         "tripNickname": "하준",
->         "role": "MEMBER",
->         "participantStatus": "LEFT",
->         "shareAmountKrw": "0.00"
->       },
->       {
->         "tripMemberId": "participant-example-e",
->         "memberId": null,
->         "tripNickname": "탈퇴한 사용자 1",
->         "role": "MEMBER",
->         "participantStatus": "WITHDRAWN",
->         "shareAmountKrw": "0.00"
->       },
->       {
->         "tripMemberId": "participant-example-f",
->         "memberId": null,
->         "tripNickname": "탈퇴한 사용자 2",
->         "role": "MEMBER",
->         "participantStatus": "WITHDRAWN",
->         "shareAmountKrw": "0.00"
->       }
->     ]
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다.
+
+공통 응답의 `data`는 [TripDetail](#tripdetail)이다.
+필드 정의는 해당 모델을 따른다.
+이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다.
+전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [TripDetail](#tripdetail) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "name": "도쿄 여행",
+    "countryCode": "JP",
+    "customCountryName": null,
+    "startDate": "2026-11-05",
+    "endDate": "2026-11-07",
+    "baseCurrency": "JPY",
+    "memberCapacity": 3,
+    "registeredMemberCount": 3,
+    "status": "UNCONFIRMED",
+    "myRole": "ADMIN",
+    "participants": [
+      {
+        "tripMemberId": "participant-example-a",
+        "memberId": "member-example-a",
+        "tripNickname": "민지",
+        "role": "ADMIN",
+        "participantStatus": "MEMBER",
+        "shareAmountKrw": "0.00"
+      },
+      {
+        "tripMemberId": "participant-example-b",
+        "memberId": "member-example-b",
+        "tripNickname": "지훈",
+        "role": "MEMBER",
+        "participantStatus": "MEMBER",
+        "shareAmountKrw": "0.00"
+      },
+      {
+        "tripMemberId": "participant-example-c",
+        "memberId": null,
+        "tripNickname": "서연",
+        "role": "MEMBER",
+        "participantStatus": "GUEST",
+        "shareAmountKrw": "0.00"
+      },
+      {
+        "tripMemberId": "participant-example-d",
+        "memberId": "member-example-d",
+        "tripNickname": "하준",
+        "role": "MEMBER",
+        "participantStatus": "LEFT",
+        "shareAmountKrw": "0.00"
+      },
+      {
+        "tripMemberId": "participant-example-e",
+        "memberId": null,
+        "tripNickname": "탈퇴한 사용자 1",
+        "role": "MEMBER",
+        "participantStatus": "WITHDRAWN",
+        "shareAmountKrw": "0.00"
+      },
+      {
+        "tripMemberId": "participant-example-f",
+        "memberId": null,
+        "tripNickname": "탈퇴한 사용자 2",
+        "role": "MEMBER",
+        "participantStatus": "WITHDRAWN",
+        "shareAmountKrw": "0.00"
+      }
+    ]
+  }
+}
+```
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 
 #### 처리 규칙
 
@@ -435,8 +434,7 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 > 논의 필요
 >
-> 최종 경로, 요청 필드 이름과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md#정보와-인원-수정) | 기존 검토 DDL `trip.sql`
+> 최종 경로, 요청 필드 이름과 응답 규격의 확정 여부
 
 #### 인증
 
@@ -458,58 +456,61 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 
 바꿀 필드만 보낸다. 모든 필드는 선택이며 `null`을 보낼 수 없다. 필드에 `null`을 보내거나 필드를 하나도 보내지 않으면 400을 반환한다.
 
-> 논의 필요
->
-> 다음 요청 필드는 [TripCreate](#tripcreate)의 제안 이름을 따른다.
->
-> Content-Type: `application/json`
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
-> | `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수이며, 기존 여행의 대표 국가가 `ETC`이면 `customCountryName`만 단독으로 수정할 수 있다. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). `null` 불가. |
-> | `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
-> | `startDate` | String | 선택 | 없음 | YYYY-MM-DD. 여행 시작일. `null` 불가. |
-> | `endDate` | String | 선택 | 없음 | YYYY-MM-DD, 여행 시작일 이상. `null` 불가. |
-> | `memberCapacity` | Integer | 선택 | 없음 | 생성자 포함 1~10명. 확정 전에만 변경할 수 있고 등록된 참여자 수보다 작게 줄일 수 없다. `null` 불가. |
->
-> ```json
-> {
->   "name": "오사카 여행",
->   "memberCapacity": 4
-> }
-> ```
+다음 요청 필드는 [TripCreate](#tripcreate)의 제안 이름을 따른다.
+
+Content-Type: `application/json`
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `name` | String | 선택 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `name`과 같은 규칙). `null` 불가. |
+| `countryCode` | String | 선택 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나([TripCreate](#tripcreate)의 `countryCode`와 같은 규칙). `null` 불가. |
+| `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`를 `ETC`로 바꾸면 필수이며, 기존 여행의 대표 국가가 `ETC`이면 `customCountryName`만 단독으로 수정할 수 있다. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([TripCreate](#tripcreate)의 `customCountryName`과 같은 규칙). `null` 불가. |
+| `baseCurrency` | String | 선택 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나([TripCreate](#tripcreate)의 `baseCurrency`와 같은 규칙). `null` 불가. |
+| `startDate` | String | 선택 | 없음 | YYYY-MM-DD. 여행 시작일. `null` 불가. |
+| `endDate` | String | 선택 | 없음 | YYYY-MM-DD, 여행 시작일 이상. `null` 불가. |
+| `memberCapacity` | Integer | 선택 | 없음 | 생성자 포함 1~10명. 확정 전에만 변경할 수 있고 등록된 참여자 수보다 작게 줄일 수 없다. `null` 불가. |
+
+```json
+{
+  "name": "오사카 여행",
+  "memberCapacity": 4
+}
+```
 
 #### 성공 응답
 
+HTTP `200 OK`를 반환한다.
+
+공통 응답의 `data`는 [TripSummary](#tripsummary)이다.
+필드 정의는 해당 모델을 따른다.
+이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다.
+전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [TripSummary](#tripsummary) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "name": "오사카 여행",
+    "countryCode": "JP",
+    "customCountryName": null,
+    "startDate": "2026-11-05",
+    "endDate": "2026-11-07",
+    "baseCurrency": "JPY",
+    "memberCapacity": 4,
+    "registeredMemberCount": 3,
+    "status": "UNCONFIRMED",
+    "myRole": "ADMIN"
+  }
+}
+```
+
 > 논의 필요
 >
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [TripSummary](#tripsummary)이다. 필드 정의는 해당 모델을 따른다. 이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다. 전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [TripSummary](#tripsummary) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "name": "오사카 여행",
->     "countryCode": "JP",
->     "customCountryName": null,
->     "startDate": "2026-11-05",
->     "endDate": "2026-11-07",
->     "baseCurrency": "JPY",
->     "memberCapacity": 4,
->     "registeredMemberCount": 3,
->     "status": "UNCONFIRMED",
->     "myRole": "ADMIN"
->   }
-> }
-> ```
+> 성공 응답 상태의 확정 여부
 
 #### 오류
 
@@ -520,16 +521,16 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 | 400 | `COMMON_INVALID_REQUEST` | 필드에 `null`을 보내거나 필드를 하나도 보내지 않음 |
 | 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`로 바꾸면서 누락한 경우도 포함 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`로 바꾸면서 누락한 경우도 포함 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -540,8 +541,8 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 > 논의 필요
 >
 > - 검토 제안: 요청에 일부 필드만 보낸 경우 저장된 여행 정보와 합친 뒤 `countryCode`와 `customCountryName`의 조합을 검증한다.
-> 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다.
-> 대표 국가를 `ETC`에서 다른 국가로 바꾸면 `customCountryName`은 생략하며, 서버는 기존에 저장된 기타 국가명을 비운다(`null`).
+> - 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다.
+> - 대표 국가를 `ETC`에서 다른 국가로 바꾸면 `customCountryName`은 생략하며, 서버는 기존에 저장된 기타 국가명을 비운다(`null`).
 
 ## 초대와 참여자 API
 
@@ -668,10 +669,11 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [InvitationSearch](#in
 
 > 논의 필요
 >
-> - [여행 삭제](../policy/trip.md#여행-삭제) 정책은 기존 초대 URL과 코드로 접근하면 삭제된 여행임을 안내하라고 하지만, 현재 응답은 없는 코드와 같은 `TRIP_INVITATION_NOT_FOUND`라서 앱이 둘을 구분할 수 없다. 별도 오류 코드로 구분할지, 정책의 안내 문구를 없는 코드와 같게 고칠지 결정한다. [여행 상세](#trip-03-여행-상세)와 [여행 삭제](#trip-14-여행-삭제)에서 삭제된 여행을 응답하는 방식도 함께 정한다.
-> - [참여 조건](../policy/trip.md#참여-조건)의 '접근이 차단된 여행'은 정의된 조건이 없어 현재 응답에서 구분하지 않는다. 차단 조건을 정하면 응답 방식을 함께 결정한다.
->
-> 출처: [정책](../policy/trip.md)
+> - [여행 삭제](../policy/trip.md#여행-삭제) 정책은 기존 초대 URL과 코드로 접근하면 삭제된 여행임을 안내하라고 하지만, 현재 응답은 없는 코드와 같은 `TRIP_INVITATION_NOT_FOUND`라서 앱이 둘을 구분할 수 없다.
+> - 별도 오류 코드로 구분할지, 정책의 안내 문구를 없는 코드와 같게 고칠지 결정한다.
+> - [여행 상세](#trip-03-여행-상세)와 [여행 삭제](#trip-14-여행-삭제)에서 삭제된 여행을 응답하는 방식도 함께 정한다.
+> - [참여 조건](../policy/trip.md#참여-조건)의 '접근이 차단된 여행'은 정의된 조건이 없어 현재 응답에서 구분하지 않는다.
+> - 차단 조건을 정하면 응답 방식을 함께 결정한다.
 
 ### TRIP-07 여행 참여
 
@@ -749,8 +751,7 @@ Content-Type: `application/json`
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -770,40 +771,35 @@ Content-Type: `application/json`
 
 ##### Body
 
-> 논의 필요
->
-> 다음 요청 모델과 예시는 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> 요청 필드: [GuestInput](#guestinput).
->
-> ```json
-> {
->   "tripNickname": "서연"
-> }
-> ```
+Content-Type: `application/json`
+
+요청 필드: [GuestInput](#guestinput).
+
+```json
+{
+  "tripNickname": "서연"
+}
+```
 
 #### 성공 응답
 
 HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Location` 헤더를 반환한다. 주소는 `/api/v1/trips/{tripId}/guests/{tripMemberId}` 형식이다.
 
-> 논의 필요
->
-> 공통 응답의 `data`는 [Guest](#guest)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [Guest](#guest) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripMemberId": "participant-example-c",
->     "tripNickname": "서연"
->   }
-> }
-> ```
+공통 응답의 `data`는 [Guest](#guest)이다.
+필드 정의는 해당 모델을 따른다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [Guest](#guest) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripMemberId": "participant-example-c",
+    "tripNickname": "서연"
+  }
+}
+```
 
 #### 오류
 
@@ -814,17 +810,13 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 추가하려 함 |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+| 409 | `TRIP_CAPACITY_FULL` | 등록할 빈자리가 없음 |
 
 #### 처리 규칙
 
@@ -839,8 +831,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -861,40 +852,35 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 ##### Body
 
-> 논의 필요
->
-> 다음 요청 모델과 예시는 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> 요청 필드: [GuestInput](#guestinput).
->
-> ```json
-> {
->   "tripNickname": "서연"
-> }
-> ```
+Content-Type: `application/json`
+
+요청 필드: [GuestInput](#guestinput).
+
+```json
+{
+  "tripNickname": "서연"
+}
+```
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [Guest](#guest)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [Guest](#guest) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "tripMemberId": "participant-example-c",
->     "tripNickname": "서연"
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다.
+
+공통 응답의 `data`는 [Guest](#guest)이다.
+필드 정의는 해당 모델을 따른다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [Guest](#guest) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "tripMemberId": "participant-example-c",
+    "tripNickname": "서연"
+  }
+}
+```
 
 #### 오류
 
@@ -904,16 +890,12 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 | --- | --- | --- |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 
 #### 처리 규칙
 
@@ -954,16 +936,16 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 | --- | --- | --- |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 삭제하려 함 |
 
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -1000,47 +982,47 @@ Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따
 
 ##### Body
 
+Content-Type: `application/json`
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `tripNickname` | String | 필수 | 없음 | 바꿀 본인의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+
+```json
+{
+  "tripNickname": "민지"
+}
+```
+
 > 논의 필요
 >
-> 요청 필드 이름은 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `tripNickname` | String | 필수 | 없음 | 바꿀 본인의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
->
-> ```json
-> {
->   "tripNickname": "민지"
-> }
-> ```
+> 요청 필드 이름의 확정 여부
 
 #### 성공 응답
 
 HTTP `200 OK`를 반환한다.
 공통 응답의 `data`는 [Participant](#participant)이다.
 
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [Participant](#participant) | 아니요 | 항상 | 수정된 본인의 여행 참여 정보. |
+
+```json
+{
+  "data": {
+    "tripMemberId": "participant-example-a",
+    "memberId": "member-example-a",
+    "tripNickname": "민지",
+    "role": "ADMIN",
+    "participantStatus": "MEMBER",
+    "shareAmountKrw": "0.00"
+  }
+}
+```
+
 > 논의 필요
 >
-> [Participant](#participant)의 필드 구성은 검토 제안이다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [Participant](#participant) | 아니요 | 항상 | 수정된 본인의 여행 참여 정보. |
->
-> ```json
-> {
->   "data": {
->     "tripMemberId": "participant-example-a",
->     "memberId": "member-example-a",
->     "tripNickname": "민지",
->     "role": "ADMIN",
->     "participantStatus": "MEMBER",
->     "shareAmountKrw": "0.00"
->   }
-> }
-> ```
+> [Participant](#participant)의 필드 구성의 확정 여부
 
 #### 오류
 
@@ -1050,16 +1032,16 @@ HTTP `200 OK`를 반환한다.
 | --- | --- | --- |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 해당 여행의 참여자가 아님. 이미 여행을 나간 회원의 요청을 포함 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행이 없거나 삭제됨 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 해당 여행의 참여자가 아님. 이미 여행을 나간 회원의 요청을 포함 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행이 없거나 삭제됨 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -1077,8 +1059,7 @@ HTTP `200 OK`를 반환한다.
 
 > 논의 필요
 >
-> 응답 모델의 필드 구성은 검토 제안이다.
-> 출처: [정책](../policy/trip.md#확정-조건) | 기존 검토 DDL `trip.sql`
+> 응답 모델의 필드 구성의 확정 여부
 
 #### 인증
 
@@ -1102,48 +1083,49 @@ HTTP `200 OK`를 반환한다.
 
 확정 요청에는 HTTP `200 OK`와 요청을 처리한 뒤의 여행 확정 상태를 반환한다. 빈자리가 남아 확정하지 못한 경우와 이미 확정된 여행에 다시 요청한 경우도 `409`가 아니라 `200 OK`를 반환한다. 앱은 응답의 `status`로 확정 여부를 판단한다.
 
-> 논의 필요
->
-> 공통 응답의 `data`는 [TripConfirmation](#tripconfirmation)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [TripConfirmation](#tripconfirmation) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> 확정했거나 이미 확정된 여행의 예시:
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "status": "CONFIRMED"
->   }
-> }
-> ```
->
-> 빈자리가 남아 확정하지 못한 여행의 예시:
->
-> ```json
-> {
->   "data": {
->     "tripId": "trip-example-a",
->     "status": "UNCONFIRMED"
->   }
-> }
-> ```
+공통 응답의 `data`는 [TripConfirmation](#tripconfirmation)이다.
+필드 정의는 해당 모델을 따른다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [TripConfirmation](#tripconfirmation) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+확정했거나 이미 확정된 여행의 예시:
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "status": "CONFIRMED"
+  }
+}
+```
+
+빈자리가 남아 확정하지 못한 여행의 예시:
+
+```json
+{
+  "data": {
+    "tripId": "trip-example-a",
+    "status": "UNCONFIRMED"
+  }
+}
+```
 
 #### 오류
 
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -1168,8 +1150,6 @@ HTTP `200 OK`를 반환한다.
 > 논의 필요
 >
 > - 잠금 대기 상한 시간과 상한을 넘었을 때 반환할 공통 오류 코드를 정한다.
->
-> 출처: [정책](../policy/trip.md#확정-조건) | 기존 검토 DDL `trip.sql`
 
 ### TRIP-12 여행 나가기 전 건수 조회
 
@@ -1216,16 +1196,18 @@ HTTP `200 OK`를 반환한다.
 
 #### 오류
 
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 권한이 없음. 여행 관리자의 요청을 포함 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+
 > 논의 필요
 >
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 권한이 없음. 여행 관리자의 요청을 포함 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -1242,8 +1224,7 @@ HTTP `200 OK`를 반환한다.
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -1267,20 +1248,18 @@ HTTP `200 OK`를 반환한다.
 
 > 논의 필요
 >
-> HTTP `204 No Content`를 반환하는 안이다. 응답 Body는 없다.
+> 응답 Body는 없다.
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 
 #### 처리 규칙
 
@@ -1297,8 +1276,7 @@ HTTP `200 OK`를 반환한다.
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -1322,7 +1300,7 @@ HTTP `200 OK`를 반환한다.
 
 > 논의 필요
 >
-> HTTP `204 No Content`를 반환하는 안이다. 응답 Body는 없다.
+> 응답 Body는 없다.
 
 #### 오류
 
@@ -1332,17 +1310,13 @@ HTTP `200 OK`를 반환한다.
 | --- | --- | --- |
 | 404 | `COMMON_NOT_FOUND` | 이미 삭제한 여행임. 삭제 응답을 받지 못해 다시 보낸 요청도 포함 |
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행을 찾을 수 없음 |
-> | 409 | `TRIP_RECORDS_EXIST` | 삭제를 막는 지출 또는 정산 기록이 존재함 |
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행을 찾을 수 없음 |
+| 409 | `TRIP_RECORDS_EXIST` | 삭제를 막는 지출 또는 정산 기록이 존재함 |
 
 #### 처리 규칙
 
@@ -1351,32 +1325,31 @@ HTTP `200 OK`를 반환한다.
 > 논의 필요
 >
 > - 다시 보낸 삭제 요청이 받은 `404`를 앱이 이미 삭제된 것으로 보고 여행 목록으로 이동하는 안을 FE와 확인한다.
->
-> 출처: [정책](../policy/trip.md) | 기존 검토 DDL `trip.sql`
 
 ## 공통 모델
 
-`논의 필요`로 표시한 모델의 이름과 필드 구성은 검토 제안이다. 요청 모델은 필수 여부와 기본값을, 응답 모델은 nullable과 포함 조건을 구분한다. 조건부 요청 필드는 예시에 사용한 조건을 만족할 때만 포함한다. 배열 원소는 링크한 모델을 따른다.
+`논의 필요`를 붙인 모델은 이름과 필드 구성을 확정하지 않았다.
+요청 모델은 필수 여부와 기본값을, 응답 모델은 nullable과 포함 조건을 구분한다. 조건부 요청 필드는 예시에 사용한 조건을 만족할 때만 포함한다. 배열 원소는 링크한 모델을 따른다.
 
 ### TripSummary
 
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
+| `name` | String | 아니요 | 항상 | 여행명. |
+| `countryCode` | String | 아니요 | 항상 | 대표 국가. 한국 `KR`, 일본 `JP`, 미국 `US`, 중국 `CN`, 유럽 `EU`, 기타 `ETC`. |
+| `customCountryName` | String | 예 | 항상 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`가 아니면 null. |
+| `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
+| `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 종료일. |
+| `baseCurrency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `memberCapacity` | Integer | 아니요 | 항상 | 총 정원, 1~10명. |
+| `registeredMemberCount` | Integer | 아니요 | 항상 | 참여 중인 로그인 참여자(`MEMBER`)와 비로그인 참여자(`GUEST`)의 합. 나간 회원, 탈퇴 회원과 빈자리 제외. |
+| `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후. |
+| `myRole` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
+
 > 논의 필요
 >
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
-> | `name` | String | 아니요 | 항상 | 여행명. |
-> | `countryCode` | String | 아니요 | 항상 | 대표 국가. 한국 `KR`, 일본 `JP`, 미국 `US`, 중국 `CN`, 유럽 `EU`, 기타 `ETC`. |
-> | `customCountryName` | String | 예 | 항상 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`가 아니면 null. |
-> | `startDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 시작일. |
-> | `endDate` | String | 아니요 | 항상 | YYYY-MM-DD. 여행 종료일. |
-> | `baseCurrency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `memberCapacity` | Integer | 아니요 | 항상 | 총 정원, 1~10명. |
-> | `registeredMemberCount` | Integer | 아니요 | 항상 | 참여 중인 로그인 참여자(`MEMBER`)와 비로그인 참여자(`GUEST`)의 합. 나간 회원, 탈퇴 회원과 빈자리 제외. |
-> | `status` | String | 아니요 | 항상 | 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후. |
-> | `myRole` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
+> 모델의 필드 구성 확정 여부
 
 여행 확정 상태는 상태 값(`status`)으로 관리한다. 기타 국가는 `countryCode`를 `ETC`로 두고, 사용자가 입력한 국가명을 국가 코드로 바꾸지 않고 `customCountryName`에 그대로 담는다. 역할 값은 `ADMIN`과 `MEMBER`다.
 
@@ -1403,30 +1376,32 @@ HTTP `200 OK`를 반환한다.
 
 여행 상세는 기본 정보와 참여자 목록을 함께 반환한다. 목록 조회와 생성 응답의 TripSummary에 참여자 목록을 추가하는 것은 아니다.
 
-> 구현 제안
->
-> TripSummary의 기본 필드에 `participants`를 추가한 응답 모델이다. 기본 필드의 정의는 [TripSummary](#tripsummary)를 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자, 나간 회원, 탈퇴 회원 순. 빈자리는 넣지 않는다. |
+TripSummary의 기본 필드에 `participants`를 추가한 응답 모델이다. 기본 필드의 정의는 [TripSummary](#tripsummary)를 따른다.
 
-### TripCreate
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `participants` | Array&lt;[Participant](#participant)&gt; | 아니요 | 항상 | 참여자 목록. 관리자, 로그인 참여자, 비로그인 참여자, 나간 회원, 탈퇴 회원 순. 빈자리는 넣지 않는다. |
 
 > 논의 필요
 >
-> 요청 모델 후보:
+> 모델의 필드 구성 확정 여부
+
+### TripCreate
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다. |
+| `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
+| `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수이며, `ETC`가 아니면 생략한다. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). `null` 불가. |
+| `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
+| `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
+| `memberCapacity` | Integer | 필수 | 없음 | 생성자 포함 1~10명. |
+| `tripNickname` | String | 필수 | 없음 | 생성자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([InviteCodeInput](#invitecodeinput)의 `tripNickname`과 같은 규칙). |
+
+> 논의 필요
 >
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `name` | String | 필수 | 없음 | 공백을 포함해 최대 15자, 한글과 영문, 숫자와 공백 허용. 특수문자 금지. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다. |
-> | `countryCode` | String | 필수 | 없음 | 대표 국가. `KR`, `JP`, `US`, `CN`, `EU`, `ETC` 중 하나. 기타 국가는 `ETC`. |
-> | `customCountryName` | String | 조건부 | 없음 | 기타 국가로 직접 입력한 국가명. `countryCode`가 `ETC`이면 필수이며, `ETC`가 아니면 생략한다. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내면 무시하지 않고 `400 COMMON_INVALID_REQUEST`로 거절한다. 최대 10자, 한글과 영문만 허용. 가운데 공백, 숫자와 특수문자 금지. 영문 대소문자 구분. 앞뒤 공백을 지운 값으로 검사하고 저장하며, 공백만 입력하면 거절한다([기본 정보](../policy/trip.md#기본-정보)와 같은 규칙). `null` 불가. |
-> | `baseCurrency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `startDate` | String | 필수 | 없음 | YYYY-MM-DD. 여행 시작일. 과거 날짜 허용. |
-> | `endDate` | String | 필수 | 없음 | YYYY-MM-DD, startDate 이상. 당일 여행 허용. |
-> | `memberCapacity` | Integer | 필수 | 없음 | 생성자 포함 1~10명. |
-> | `tripNickname` | String | 필수 | 없음 | 생성자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([InviteCodeInput](#invitecodeinput)의 `tripNickname`과 같은 규칙). |
+> 모델의 필드 구성 확정 여부
 
 ### Invitation
 
@@ -1464,18 +1439,18 @@ HTTP `200 OK`를 반환한다.
 
 ### Participant
 
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
+| `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자와 탈퇴 회원이면 null이다. |
+| `tripNickname` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 탈퇴 회원이면 서버가 만든 '탈퇴한 사용자 N'이다. 이름을 식별자로 사용하지 않는다. |
+| `role` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
+| `participantStatus` | String | 아니요 | 항상 | 참여자 상태. `MEMBER`는 로그인 참여자, `GUEST`는 비로그인 참여자, `LEFT`는 나간 회원, `WITHDRAWN`은 탈퇴 회원이다. |
+| `shareAmountKrw` | String | 아니요 | 항상 | 참여자별 부담액. 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다. 소수점 이하 2자리 문자열로 전달한다. |
+
 > 논의 필요
 >
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
-> | `memberId` | String | 예 | 항상 | Billit 회원 계정 ID. 비로그인 참여자와 탈퇴 회원이면 null이다. |
-> | `tripNickname` | String | 아니요 | 항상 | 참여자의 여행방 닉네임. 탈퇴 회원이면 서버가 만든 '탈퇴한 사용자 N'이다. 이름을 식별자로 사용하지 않는다. |
-> | `role` | String | 아니요 | 항상 | `ADMIN`은 이 여행의 관리자, `MEMBER`는 일반 참여자다. |
-> | `participantStatus` | String | 아니요 | 항상 | 참여자 상태. `MEMBER`는 로그인 참여자, `GUEST`는 비로그인 참여자, `LEFT`는 나간 회원, `WITHDRAWN`은 탈퇴 회원이다. |
-> | `shareAmountKrw` | String | 아니요 | 항상 | 참여자별 부담액. 각 지출에 등록한 환율로 원화로 환산해 합산하며, 지출 날짜 필터와 관계없이 여행 전체 기간을 기준으로 한다. 소수점 이하 2자리 문자열로 전달한다. |
+> 모델의 필드 구성 확정 여부
 
 참여자 상태는 `participantStatus`로 전달하며, 값은 DB의 참여자 상태(`trip_member_status`)와 같다([여행 설계](../design/trip.md#여행과-참여자)).
 나간 회원의 `tripNickname`에는 나가기 전에 쓰던 여행방 닉네임을 담는다.
@@ -1484,35 +1459,35 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 
 ### GuestInput
 
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `tripNickname` | String | 필수 | 없음 | 비로그인 참여자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+
 > 논의 필요
 >
-> 요청 모델 후보:
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `tripNickname` | String | 필수 | 없음 | 비로그인 참여자의 여행방 닉네임. 1\~10자, 한글 완성형(가\~힣), 영문(A\~Z, a\~z)과 숫자(0\~9)만 허용([여행방 닉네임](../policy/trip.md#여행방-닉네임)과 같은 규칙). 같은 여행의 다른 참여자와 겹칠 수 없다. |
+> 모델의 필드 구성 확정 여부
 
 ### Guest
 
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
+| `tripNickname` | String | 아니요 | 항상 | 등록된 비로그인 참여자의 여행방 닉네임. |
+
 > 논의 필요
 >
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `tripMemberId` | String | 아니요 | 항상 | 여행별 참여자 ID. 회원과 비로그인 참여자를 구분하는 ID다. |
-> | `tripNickname` | String | 아니요 | 항상 | 등록된 비로그인 참여자의 여행방 닉네임. |
+> 모델의 필드 구성 확정 여부
 
 ### TripConfirmation
 
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
+| `status` | String | 아니요 | 항상 | 요청을 처리한 뒤의 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후([TripSummary](#tripsummary)의 `status`와 같은 값). |
+
 > 논의 필요
 >
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `tripId` | String | 아니요 | 항상 | 여행 ID. 문자열로 전달한다. |
-> | `status` | String | 아니요 | 항상 | 요청을 처리한 뒤의 여행 확정 상태. `UNCONFIRMED`는 확정 전, `CONFIRMED`는 확정 후([TripSummary](#tripsummary)의 `status`와 같은 값). |
+> 모델의 필드 구성 확정 여부
 
 ## 오류 코드
 
@@ -1529,12 +1504,14 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 
 > 논의 필요
 >
-> 아래 오류 코드의 이름, HTTP 대응과 안내 문구는 제안이다. 공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 409 | `TRIP_RECORDS_EXIST` | 삭제를 막는 지출 또는 정산 기록이 존재함 |
+> 아래 오류 코드의 이름, HTTP 대응과 안내 문구의 확정 여부
+
+공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 409 | `TRIP_RECORDS_EXIST` | 삭제를 막는 지출 또는 정산 기록이 존재함 |
