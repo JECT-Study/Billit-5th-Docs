@@ -26,7 +26,8 @@
 
 - `trip`에는 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 제약을 둔다.
 - `trip_member`에는 `UNIQUE (trip_id, trip_nickname)` 제약과 `UNIQUE (trip_id, member_id)` 제약을 둔다.
-- 서버는 `trip`에 생성자 컬럼을 두지 않고, `role = ADMIN`인 `trip_member` 행으로 여행 생성자이자 관리자를 판단한다. 근거: [Issue #27](https://github.com/JECT-Study/Billit-5th-Docs/issues/27)
+- `trip`에는 생성자 컬럼을 두지 않는다.
+- 서버는 `role = ADMIN`인 `trip_member` 행으로 여행 생성자이자 관리자를 판단한다. 근거: [Issue #27](https://github.com/JECT-Study/Billit-5th-Docs/issues/27)
 - 다른 업무 영역은 참여자를 `member.id`가 아닌 `trip_member.id`로 참조한다.
 
 ### 처리 흐름
@@ -67,7 +68,8 @@ sequenceDiagram
 - 대표 국가가 기타 국가이면 서버는 `country_code`에 `ETC`를, 입력한 국가명을 `custom_country_name`에 저장한다.
 - 회원이 계정 닉네임(`member.nickname`)을 바꿔도 서버는 `trip_nickname`을 바꾸지 않는다.
 
-다음은 여행방 닉네임 제약의 가상 예시다. 같은 여행의 참여자 행 21에 여행방 닉네임 `민수`가 있다고 가정한다.
+같은 여행의 참여자 행 21에 여행방 닉네임 `민수`가 있다고 가정한다.
+다음은 여행방 닉네임 제약의 가상 예시다.
 
 ```text
 1. 관리자가 비로그인 참여자를 `민수`로 등록하거나 다른 비로그인 참여자의 이름을 `민수`로 수정한다.
@@ -108,7 +110,8 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | `trip.idempotency_key` | `UUID` | NOT NULL, UNIQUE `uq_trip_idempotency_key` | 앱이 만든 여행 생성 고유키 |
 
-- 서버는 고유키를 여행 생성에만 쓰며, 키 하나로 여행 하나만 만든다.
+- 서버는 고유키를 여행 생성에만 쓴다.
+- 서버는 키 하나로 여행 하나만 만든다.
 - 서버는 고유키를 만료 없이 여행과 함께 보관한다.
 - 서버는 키를 사용한 회원을 그 키로 만든 여행의 `role = ADMIN`인 `trip_member.member_id`로 확인한다. 근거: [Issue #27](https://github.com/JECT-Study/Billit-5th-Docs/issues/27)
 
@@ -139,18 +142,21 @@ sequenceDiagram
     end
 ```
 
-- 앱은 생성 시도마다 새 키를 만들고, 응답을 받지 못해 같은 요청을 다시 보낼 때만 같은 키를 쓴다.
+- 앱은 생성 시도마다 새 키를 만든다.
+- 응답을 받지 못해 같은 요청을 다시 보낼 때만 앱은 같은 키를 쓴다.
 - 서버는 요청자 인증과 본문 검증을 고유키 조회보다 먼저 실행한다.
 - 본문 검증 범위는 필수값, 형식과 범위, 여행 기간 순서, `countryCode`와 `customCountryName`의 조합이다.
 - 서버는 본문 검증을 통과한 같은 키의 요청을 같은 생성 요청의 재시도로 보고 처음 요청의 본문과 비교하지 않는다.
-- 고유키로 찾은 여행을 같은 회원이 만들었으면 서버는 `201 Created`와 `Location`을 반환하고, `data`에 그 여행의 현재 정보를 담는다.
+- 고유키로 찾은 여행을 같은 회원이 만들었으면 서버는 `201 Created`, `Location`과 그 여행의 현재 정보를 담은 `data`를 반환한다.
 
 ### 트랜잭션과 동시성
 
 - 서버는 여행, 생성자 참여 정보와 고유키의 저장을 한 트랜잭션으로 묶는다.
 - 서버는 여행 생성 처리 전체를 한 트랜잭션으로 묶지 않는다. PostgreSQL은 오류가 난 트랜잭션에서 조회를 실행할 수 없기 때문이다.
-- 고유키 중복으로 저장에 실패하면 서버는 그 트랜잭션을 롤백하고 새 트랜잭션에서 고유키로 여행을 다시 조회한다. 근거: [Issue #26](https://github.com/JECT-Study/Billit-5th-Docs/issues/26)
-- 같은 키의 요청이 동시에 오면 서버는 여행을 하나만 만들고, 늦게 처리한 요청에는 재요청과 같은 응답을 보낸다.
+- 고유키 중복으로 저장에 실패하면 서버는 그 트랜잭션을 롤백한다.
+- 롤백한 뒤 서버는 새 트랜잭션에서 고유키로 여행을 다시 조회한다. 근거: [Issue #26](https://github.com/JECT-Study/Billit-5th-Docs/issues/26)
+- 같은 키의 요청이 동시에 오면 서버는 여행을 하나만 만든다.
+- 같은 키의 동시 요청 중 늦게 처리한 요청에 서버는 재요청과 같은 응답을 보낸다.
 
 ### 실패 처리
 
