@@ -47,7 +47,7 @@
 
 정산 준비 취소와 발행된 정산 취소를 분리한다. 송금은 앱 밖에서 진행하며 앱은 실제 송금 실행 API를 제공하지 않는다.
 
-[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 이 문서는 API 스펙 검토용 초안이다. API 식별자는 화면 정의서 식별자와 별개다. 구체적인 경로, 요청과 응답 필드 및 오류 코드는 아직 팀 검토를 마치지 않았다. 각 API의 `논의 필요` 인용문 안에 제안 모델과 예시를 구분한다.
 
@@ -94,7 +94,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -183,7 +183,7 @@
 >
 > - 최대 지출 건수와 잠금 유지 시간을 결정한다. 준비를 시작한 회원과 현재 작업을 확인하는 방법, 준비 시작 응답을 받지 못한 앱이 기존 준비를 조회하는 방법도 정해야 한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-03 정산 준비 조회
 
@@ -192,7 +192,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -262,7 +262,7 @@
 >
 > - 만료 전 준비 화면으로 돌아오는 방법을 결정한다. 앱이 준비 잠금 토큰을 잃어버렸을 때 기존 준비를 이어갈 수 있는지, 조회에도 토큰을 요구할지 함께 정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-04 준비 잠금 연장
 
@@ -271,7 +271,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -344,7 +344,7 @@
 >
 > - 준비 토큰 전달 위치, 잠금 유지 시간과 연장 주기를 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-05 정산 준비 취소
 
@@ -353,7 +353,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -412,7 +412,7 @@
 >
 > - 만료 후 정상 이탈 허용, 반복 취소 응답과 토큰 전달 위치를 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ## 계산과 발행 API
 
@@ -423,7 +423,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -542,7 +542,7 @@
 >
 > - 미리보기 결과의 저장 위치와 식별 및 버전 방식, 송금 횟수를 최소로 보장할지와 계산 결과가 여러 개일 때의 선택 기준, 관리자 부담 자투리와 통화 최소 단위를 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-07 정산 확정과 발행
 
@@ -551,7 +551,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -653,7 +653,7 @@
 > - 미리보기 식별 및 버전 전달 필드, 방식 변경 시 이전 미리보기 무효화와 불일치 오류 응답을 결정한 뒤 정산 확정 요청 Body 예시를 작성한다.
 > - 중복 발행의 다시 요청했을 때의 응답, 송금 0건과 처음부터 수령 확인 가능 관계 0건인 경우의 완료 시점을 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ## 정산서 조회 API
 
@@ -664,7 +664,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -758,7 +758,7 @@
 >
 > - 발행 시각 기준 정렬 방향과 동률, 취소 이력의 상세 보존 범위를 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-09 발행 정산 상세
 
@@ -767,7 +767,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -855,7 +855,7 @@
 >
 > - [정산 취소 정책의 제안](../policy/settlement.md#정산-취소) 채택 여부를 확인한다. 채택 시 취소일과 취소 당시 금액 및 송금 관계만 읽기 전용으로 반환하고 결제 목록, 품목 상세와 액션은 제외한다. 원본 수정 및 재정산과 독립된 결과 보존 방법을 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-10 참여자별 정산서
 
@@ -864,7 +864,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -970,7 +970,7 @@
 >
 > - 공유 이미지의 요약 또는 품목별 상세 범위, 취소와 탈퇴 시 표시 및 지출 정렬값이 같은 경우을 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-11 내 정산 목록
 
@@ -979,7 +979,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -1066,7 +1066,7 @@
 >
 > - 기본 정렬 기준과 값이 같은 경우의 순서를 결정한다. 생성자 탈퇴 후에도 본인 정산서를 내 정산 내역에서 제공한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-12 내 정산 상세
 
@@ -1075,7 +1075,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -1178,7 +1178,7 @@
 >
 > - 취소 정산서의 상세와 근거 조회 범위를 결정한다. 생성자 탈퇴 후에는 최소 기록을 제공하는 응답 모델과 일반 정산서의 구분을 설계한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ## 수령 확인과 취소 API
 
@@ -1189,7 +1189,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -1256,7 +1256,7 @@
 >
 > - 같은 수령 확인의 반복 응답과 완료 후 재시도, 처음부터 확인 가능한 관계가 0건일 때의 완료를 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ### SETTLE-14 발행 정산 취소
 
@@ -1265,7 +1265,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 #### 인증
 
@@ -1329,7 +1329,7 @@
 >
 > - 취소된 송금과 지출 연결 및 당시 금액 보존, 취소 반복 응답과 공유 이미지의 취소 안내를 결정한다.
 >
-> 출처: [정책](../policy/settlement.md) | [처리 설계](../design/settlement.md) | [잠금](../design/locking.md)
+> 출처: [정책](../policy/settlement.md) | [설계](../design/settlement.md)
 
 ## 공통 모델
 

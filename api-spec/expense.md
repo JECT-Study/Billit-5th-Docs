@@ -34,7 +34,7 @@
 
 입력과 계산 결과 확인, 최종 저장을 구분한다. 결제자와 기록자, 부담자는 서로 다를 수 있다.
 
-[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 이 문서는 API 스펙 검토용 초안이다. API 식별자는 화면 정의서 식별자와 별개다. 구체적인 경로, 요청과 응답 필드 및 오류 코드는 아직 팀 검토를 마치지 않았다. 각 API의 `논의 필요` 인용문 안에 제안 모델과 예시를 구분한다.
 
@@ -69,7 +69,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -160,7 +160,7 @@
 >
 > - 기간 경계, 정산 필터와 선택 가능 여부 및 선택 불가 사유의 응답 필드와 포함 조건, 기본 정렬 기준과 값이 같은 경우의 순서 기준을 결정한다. 정산 응답 필드 후보는 [Candidate](settlement.md#candidate)를 참고한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ### EXP-02 지출 상세
 
@@ -169,7 +169,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -262,7 +262,7 @@
 >
 > - 품목 ID와 표시 순서, 탈퇴자의 품목 숨김과 정산에 필요한 금액만 표시하는 범위, 지출명 길이, 환율 제공 기관 및 기준일의 null 규칙을 결정한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ### EXP-03 지출 생성
 
@@ -271,7 +271,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -407,7 +407,7 @@
 > - 저장 고유키를 보낼 위치와 중복으로 판단할 범위, 보존 기간, 진행 중 중복과 같은 키의 다른 내용, 이미 성공한 요청을 다시 보냈을 때의 응답과 삭제 후 재시도를 결정한다.
 > - 금액 상한과 통화 최소 단위, 지출명 길이와 환율 출처를 확정해야 한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ## 수정 잠금과 변경 API
 
@@ -418,7 +418,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -485,7 +485,7 @@
 >
 > - 잠금 토큰 발급 방법과 형식, 유지 시간을 결정한다. 잠금 획득 응답을 받지 못했을 때 같은 수정 작업을 다시 확인하는 방법도 정해야 한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ### EXP-05 수정 잠금 연장
 
@@ -494,7 +494,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -567,7 +567,7 @@
 >
 > - 토큰 헤더 이름과 전달 위치, 연장 상한과 만료 경계를 결정한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ### EXP-06 수정 잠금 해제
 
@@ -576,7 +576,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -635,7 +635,7 @@
 >
 > - 토큰 전달, 이미 해제되었거나 만료된 요청의 성공 또는 충돌 응답을 결정한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ### EXP-07 지출 수정
 
@@ -644,7 +644,7 @@
 > 논의 필요
 >
 > 전체 입력값을 교체하는 PUT 메서드는 확정했다. 최종 경로와 요청 및 응답 필드는 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -777,7 +777,7 @@
 >
 > - 계산 주체와 세부 계산 규칙은 지출 생성과 함께 확정한다. 잠금 토큰 전달 방법과 수정 저장 응답을 받지 못했을 때의 재요청 처리도 결정해야 한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ### EXP-08 지출 삭제
 
@@ -786,7 +786,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -836,7 +836,7 @@
 >
 > - 본인의 수정 잠금을 보유한 상태에서 삭제할 수 있는지, 재삭제 응답을 결정한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ## 영수증 인식 API
 
@@ -847,7 +847,7 @@
 > 논의 필요
 >
 > 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 #### 인증
 
@@ -937,7 +937,7 @@
 
 인식만으로 지출을 저장하지 않는다. 실패 시 재시도와 수기 입력이 가능해야 한다. 작업 접수 후 별도 조회하는 비동기 방식은 사용하지 않는다.
 
-응답에는 카드번호, 카드 승인번호, 영수증 번호, 카드사와 전화번호를 포함하지 않는다. 서버는 원본 이미지를 저장하지 않으며, 이미지 처리 기준은 [운영 환경과 개인정보 보호](../design/operations-privacy.md#영수증-이미지)를 따른다.
+응답에는 카드번호, 카드 승인번호, 영수증 번호, 카드사와 전화번호를 포함하지 않는다. 서버는 원본 이미지를 저장하지 않으며, 이미지 처리 기준은 [지출 설계](../design/expense.md#영수증-이미지)를 따른다.
 
 일부 필드를 인식하지 못해도 HTTP `200 OK`로 인식한 부분 결과를 반환한다. 인식하지 못한 단일 필드와 품목의 필드는 null로 반환하며, 인식된 품목이 없으면 items는 빈 배열로 반환한다. 누락값을 0이나 임의의 값으로 채우지 않는다. 사용자는 인식 결과를 검수하고 누락값을 보완한 뒤 별도로 지출 저장을 요청한다.
 
@@ -963,14 +963,14 @@
 >
 > - 외부 인식 호출과 전체 요청의 타임아웃 기준, 시간 초과 시 오류 응답과 앱의 재시도 처리를 결정한다.
 >
-> 출처: [정책](../policy/expense.md) | [계산 설계](../design/expense-calculation.md) | [잠금](../design/locking.md) | [멱등성](../design/idempotency.md)
+> 출처: [정책](../policy/expense.md) | [설계](../design/expense.md)
 
 ## 계산 미리보기 API 후보
 
 > 논의 필요
 >
 > 서버에서 계산하기로 하면 `POST /api/v1/trips/{tripId}/expense-previews`를 검토한다. 입력 필드는 ExpenseInput을 바탕으로 정한다. 저장 요청에 최종 부담액을 포함할지와 서버가 다시 검증할 항목을 먼저 결정한다. 계산 결과 확인만으로 지출을 저장하지 않는다. POC 후 도입 여부와 결과 고정 방식을 결정하므로 API 목록의 확정 대상에 포함하지 않는다.
-> 출처: [지출 계산 설계](../design/expense-calculation.md#논의-필요)
+> 출처: [지출 설계](../design/expense.md#논의-필요)
 
 ## 공통 모델
 
