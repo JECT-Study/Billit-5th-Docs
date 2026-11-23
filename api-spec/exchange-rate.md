@@ -22,9 +22,11 @@
 
 개인 환전 기록과 외부 API 환율을 구분한다. 외부 조회값 자체는 개인 기록으로 자동 저장하지 않는다. 직접 수정한 환율은 지출에 적용한다. 본인 현금 또는 트래블 카드 지출의 수동 수정값은 개인 기록으로 자동 저장한다. 일반 카드 또는 타인 결제의 수동 입력값을 자동 저장할지는 논의 필요다. 여행방별, 결제 통화별 직전 입력값을 다음 지출에 노출한다. 자동 저장 시점과 일자 및 수단 매핑, 기존 기본값 선택 규칙과의 우선순위는 [환율 정책](../policy/exchange-rate.md#지출-환율)의 미결 사항을 따른다.
 
-[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
+[목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/exchange-rate.md)
 
-이 문서는 API 스펙 검토용 초안이다. API 식별자는 화면 정의서 식별자와 별개다. 구체적인 경로, 요청과 응답 필드 및 오류 코드는 아직 팀 검토를 마치지 않았다. 각 API의 `논의 필요` 인용문 안에 제안 모델과 예시를 구분한다.
+이 문서는 API 스펙 검토용 초안이다.
+API 식별자는 화면 정의서 식별자와 별개다.
+경로, 요청과 응답 필드, 오류 코드를 팀에서 확정하지 않은 API는 Method와 Path 아래에 `논의 필요`로 표시한다.
 
 ## API 목록
 
@@ -43,8 +45,7 @@
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -64,64 +65,60 @@
 
 ##### Query Parameter
 
-> 논의 필요
->
-> 다음 조회 필드는 검토 제안이다. 선택 필터를 생략하면 해당 조건을 적용하지 않는다.
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `page` | Integer | 선택 | 0 | 0 이상. 다음 페이지는 현재 page+1. |
-> | `size` | Integer | 선택 | 20 | 1~100, 범위 밖이면 400. |
+선택 필터를 생략하면 해당 조건을 적용하지 않는다.
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `page` | Integer | 선택 | 0 | 0 이상. 다음 페이지는 현재 page+1. |
+| `size` | Integer | 선택 | 20 | 1~100, 범위 밖이면 400. |
 
 요청 Body는 보내지 않는다.
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 Array&lt;[PersonalRate](#personalrate)&gt;이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | Array&lt;[PersonalRate](#personalrate)&gt; | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> 응답 최상위 `page`는 [Page](common.md#page)를 따른다. 페이지 적용 자체와 개별 기본 정렬은 검토 대상이다.
->
-> ```json
-> {
->   "data": [
->     {
->       "exchangeRateId": "rate-example-a",
->       "currency": "JPY",
->       "rate": "9.12",
->       "exchangeMethod": "CASH",
->       "exchangeDate": "2026-11-05",
->       "createdAt": "2026-11-05T03:00:00Z"
->     }
->   ],
->   "page": {
->     "page": 0,
->     "size": 20,
->     "totalElements": 1,
->     "hasNext": false
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다.
+
+공통 응답의 `data`는 Array&lt;[PersonalRate](#personalrate)&gt;이다.
+필드 정의는 해당 모델을 따른다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | Array&lt;[PersonalRate](#personalrate)&gt; | 아니요 | 항상 | 이 API의 처리 결과. |
+
+응답 최상위 `page`는 [Page](common.md#page)를 따른다.
+페이지 적용 자체와 개별 기본 정렬은 검토 대상이다.
+
+```json
+{
+  "data": [
+    {
+      "exchangeRateId": "rate-example-a",
+      "currency": "JPY",
+      "rate": "9.12",
+      "exchangeMethod": "CASH",
+      "exchangeDate": "2026-11-05",
+      "createdAt": "2026-11-05T03:00:00Z"
+    }
+  ],
+  "page": {
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "hasNext": false
+  }
+}
+```
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 
 #### 처리 규칙
 
@@ -130,8 +127,6 @@
 > 논의 필요
 >
 > - 통화와 환전 수단 필터, 정렬, 최근 기록을 등록 또는 수정 시각 중 무엇으로 선택할지 결정한다.
->
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
 
 ### FX-02 개인 환율 등록
 
@@ -139,8 +134,7 @@
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -160,62 +154,59 @@
 
 ##### Body
 
-> 논의 필요
->
-> 다음 요청 모델과 예시는 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> 요청 필드: [PersonalRateInput](#personalrateinput).
->
-> ```json
-> {
->   "currency": "JPY",
->   "rate": "9.12",
->   "exchangeMethod": "CASH",
->   "exchangeDate": "2026-11-05"
-> }
-> ```
+Content-Type: `application/json`
+
+요청 필드: [PersonalRateInput](#personalrateinput).
+
+```json
+{
+  "currency": "JPY",
+  "rate": "9.12",
+  "exchangeMethod": "CASH",
+  "exchangeDate": "2026-11-05"
+}
+```
 
 #### 성공 응답
 
+HTTP `201 Created`를 반환한다.
+
+공통 응답의 `data`는 [PersonalRate](#personalrate)이다.
+필드 정의는 해당 모델을 따른다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [PersonalRate](#personalrate) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "exchangeRateId": "rate-example-a",
+    "currency": "JPY",
+    "rate": "9.12",
+    "exchangeMethod": "CASH",
+    "exchangeDate": "2026-11-05",
+    "createdAt": "2026-11-05T03:00:00Z"
+  }
+}
+```
+
+생성한 대상의 조회 URL을 `Location`에 제공한다.
+
 > 논의 필요
 >
-> HTTP `201 Created`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [PersonalRate](#personalrate)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [PersonalRate](#personalrate) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "exchangeRateId": "rate-example-a",
->     "currency": "JPY",
->     "rate": "9.12",
->     "exchangeMethod": "CASH",
->     "exchangeDate": "2026-11-05",
->     "createdAt": "2026-11-05T03:00:00Z"
->   }
-> }
-> ```
->
-> 생성한 대상의 조회 URL을 `Location`에 제공한다. 조회 경로를 아직 정의하지 않은 자원은 해당 경로를 함께 확정해야 한다.
+> 조회 경로를 아직 정의하지 않은 자원은 해당 경로를 함께 확정해야 한다.
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 
 #### 처리 규칙
 
@@ -224,8 +215,6 @@
 > 논의 필요
 >
 > - 환율 상한과 KRW 처리, 동일 기록의 재요청 응답과 중복 오류 매핑을 결정한다.
->
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
 
 ## 환율 조회와 선택 API
 
@@ -235,8 +224,7 @@
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다.
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
+> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -250,51 +238,46 @@
 
 ##### Query Parameter
 
-> 논의 필요
->
-> 다음 조회 필드는 검토 제안이다. 선택 필터를 생략하면 해당 조건을 적용하지 않는다.
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜를 조회 기준으로 사용. 미래 날짜는 거절. |
+선택 필터를 생략하면 해당 조건을 적용하지 않는다.
+
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜를 조회 기준으로 사용. 미래 날짜는 거절. |
 
 요청 Body는 보내지 않는다.
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [ReferenceRate](#referencerate)이다. 필드 정의는 해당 모델을 따른다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [ReferenceRate](#referencerate) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "currency": "JPY",
->     "rate": "9.12",
->     "provider": "EXAMPLE_PROVIDER",
->     "baseDate": "2026-11-05"
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다.
+
+공통 응답의 `data`는 [ReferenceRate](#referencerate)이다.
+필드 정의는 해당 모델을 따른다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [ReferenceRate](#referencerate) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "currency": "JPY",
+    "rate": "9.12",
+    "provider": "EXAMPLE_PROVIDER",
+    "baseDate": "2026-11-05"
+  }
+}
+```
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. 미래 날짜 요청 포함 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 503 | `EXCHANGE_RATE_PROVIDER_UNAVAILABLE` | 외부 환율을 일시적으로 조회할 수 없음 |
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. 미래 날짜 요청 포함 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 503 | `EXCHANGE_RATE_PROVIDER_UNAVAILABLE` | 외부 환율을 일시적으로 조회할 수 없음 |
 
 #### 처리 규칙
 
@@ -309,8 +292,6 @@
 > 논의 필요
 >
 > - 미래 날짜 판정에 사용할 업무 시간대와 오류 코드, 이전 고시값 탐색 범위와 고시값이 전혀 없는 경우의 HTTP 상태 및 오류 코드, 환율 제공 기관을 표현할 값을 결정한다.
->
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
 
 ### FX-04 지출 기본 환율 결정: 조건부
 
@@ -318,8 +299,8 @@
 
 > 논의 필요
 >
-> 경로, 요청과 응답 규격은 검토 제안이다. 이 API는 제공 범위 또는 구현 방식 결정 후 채택한다.
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
+> - 경로, 요청, 응답과 오류 코드의 확정 여부
+> - 이 API는 제공 범위 또는 구현 방식 결정 후 채택한다.
 
 #### 인증
 
@@ -339,59 +320,54 @@
 
 ##### Body
 
-> 논의 필요
->
-> 다음 요청 모델과 예시는 검토 제안이다.
->
-> Content-Type: `application/json`
->
-> 요청 필드: [RateResolutionInput](#rateresolutioninput).
->
-> ```json
-> {
->   "splitType": "EQUAL",
->   "payerTripMemberId": "participant-example-a",
->   "paymentMethod": "CARD",
->   "currency": "JPY",
->   "paidDate": "2026-11-05"
-> }
-> ```
+Content-Type: `application/json`
+
+요청 필드: [RateResolutionInput](#rateresolutioninput).
+
+```json
+{
+  "splitType": "EQUAL",
+  "payerTripMemberId": "participant-example-a",
+  "paymentMethod": "CARD",
+  "currency": "JPY",
+  "paidDate": "2026-11-05"
+}
+```
 
 #### 성공 응답
 
-> 논의 필요
->
-> HTTP `200 OK`를 반환하는 안이다.
->
-> 공통 응답의 `data`는 [ReferenceRate](#referencerate)이다. 필드 정의는 해당 모델을 따른다. 이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다. 전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `data` | [ReferenceRate](#referencerate) | 아니요 | 항상 | 이 API의 처리 결과. |
->
-> ```json
-> {
->   "data": {
->     "currency": "JPY",
->     "rate": "9.12",
->     "provider": "EXAMPLE_PROVIDER",
->     "baseDate": "2026-11-05"
->   }
-> }
-> ```
+HTTP `200 OK`를 반환한다.
+
+공통 응답의 `data`는 [ReferenceRate](#referencerate)이다.
+필드 정의는 해당 모델을 따른다.
+이 모델은 일부 필드만 정의한 구조이며, 아래 예시는 정의된 필드 범위만 보여준다.
+전체 요청과 응답 규격은 이 API의 논의 사항을 반영해 완성해야 한다.
+
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `data` | [ReferenceRate](#referencerate) | 아니요 | 항상 | 이 API의 처리 결과. |
+
+```json
+{
+  "data": {
+    "currency": "JPY",
+    "rate": "9.12",
+    "provider": "EXAMPLE_PROVIDER",
+    "baseDate": "2026-11-05"
+  }
+}
+```
 
 #### 오류
 
-> 논의 필요
->
-> 아래 오류 매핑은 제안이다. 확정된 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
->
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 
 #### 처리 규칙
 
@@ -399,87 +375,82 @@
 
 > 논의 필요
 >
-> - 서버 결정 API를 제공할지 FE가 규칙을 적용할지 결정한다. 응답 예시는 API 환율을 선택한 경우의 후보일 뿐 개인 기록과 수동 입력을 포함한 최종 모델이 아니다.
+> - 서버 결정 API를 제공할지 FE가 규칙을 적용할지 결정한다.
+> - 응답 예시는 API 환율을 선택한 경우의 후보일 뿐 개인 기록과 수동 입력을 포함한 최종 모델이 아니다.
 > - 개인 기록을 고를 때 환전 수단도 일치시킬지와 기록이 없을 때의 오류 또는 안내 응답을 결정한다.
->
-> 출처: [정책](../policy/exchange-rate.md) | 기존 검토 DDL `exchange_rate.sql`
 
 ## 개인 기록 변경 API 후보
 
 > 논의 필요
 >
-> 개인 환율 수정과 삭제 제공 여부를 먼저 결정한다. 채택 시 `PATCH`와 `DELETE /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`를 검토한다. 수동 수정값의 자동 저장은 1차 MVP에 포함한다. 자동 저장 시점, 지출 저장 API와의 연계 및 중복 시 응답은 추가로 결정한다.
-> 출처: [환율 정책](../policy/exchange-rate.md#개인-환율-기록)
+> - 개인 환율 수정과 삭제 제공 여부를 먼저 결정한다.
+> - 채택 시 `PATCH`와 `DELETE /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`를 검토한다.
+> - 수동 수정값의 자동 저장은 1차 MVP에 포함한다.
+> - 자동 저장 시점, 지출 저장 API와의 연계 및 중복 시 응답은 추가로 결정한다.
 
 ## 공통 모델
 
-모델 이름과 필드 구성은 모두 검토 제안이다. 요청 모델은 필수 여부와 기본값을, 응답 모델은 nullable과 포함 조건을 구분한다. 조건부 요청 필드는 예시에 사용한 조건을 만족할 때만 포함한다. 배열 원소는 링크한 모델을 따른다.
+> 논의 필요
+>
+> 모델 이름과 필드 구성의 확정 여부
+
+요청 모델은 필수 여부와 기본값을, 응답 모델은 nullable과 포함 조건을 구분한다. 조건부 요청 필드는 예시에 사용한 조건을 만족할 때만 포함한다. 배열 원소는 링크한 모델을 따른다.
 
 ### PersonalRate
 
-> 논의 필요
->
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `exchangeRateId` | String | 아니요 | 항상 | 본인이 등록한 개인 환율 기록 ID. |
-> | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
-> | `exchangeMethod` | String | 아니요 | 항상 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
-> | `exchangeDate` | String | 아니요 | 항상 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
-> | `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 등록 시각. 최근 기록 선택 기준으로 사용할지는 논의 필요. |
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `exchangeRateId` | String | 아니요 | 항상 | 본인이 등록한 개인 환율 기록 ID. |
+| `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
+| `exchangeMethod` | String | 아니요 | 항상 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
+| `exchangeDate` | String | 아니요 | 항상 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
+| `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 등록 시각. 최근 기록 선택 기준으로 사용할지는 논의 필요. |
 
 ### PersonalRateInput
 
-> 논의 필요
->
-> 요청 모델 후보:
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `rate` | String | 필수 | 없음 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
-> | `exchangeMethod` | String | 필수 | 없음 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
-> | `exchangeDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `rate` | String | 필수 | 없음 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
+| `exchangeMethod` | String | 필수 | 없음 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
+| `exchangeDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
 
 ### ReferenceRate
 
-> 논의 필요
->
-> 응답 모델 후보:
->
-> | 필드 | 타입 | nullable | 포함 조건 | 설명 |
-> | --- | --- | --- | --- | --- |
-> | `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액. 소수점 이하 2자리 문자열로 전달한다. |
-> | `provider` | String | 아니요 | 항상 | 실제 환율 제공 기관 식별. 기관 코드 체계는 논의 필요. |
-> | `baseDate` | String | 아니요 | 항상 | YYYY-MM-DD. 환율의 실제 기준일. 요청 결제일과 다를 수 있다. |
+| 필드 | 타입 | nullable | 포함 조건 | 설명 |
+| --- | --- | --- | --- | --- |
+| `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액. 소수점 이하 2자리 문자열로 전달한다. |
+| `provider` | String | 아니요 | 항상 | 실제 환율 제공 기관 식별. 기관 코드 체계는 논의 필요. |
+| `baseDate` | String | 아니요 | 항상 | YYYY-MM-DD. 환율의 실제 기준일. 요청 결제일과 다를 수 있다. |
 
 ### RateResolutionInput
 
-> 논의 필요
->
-> 요청 모델 후보:
->
-> | 필드 | 타입 | 필수 | 기본값 | 규칙 |
-> | --- | --- | --- | --- | --- |
-> | `splitType` | String | 필수 | 없음 | `EQUAL`은 전체 1/N, `BY_ITEM`은 품목별 분배다. |
-> | `payerTripMemberId` | String | 필수 | 없음 | 실제 결제자의 여행 참여자 ID. 같은 여행의 회원 참여자만 지정할 수 있다. |
-> | `paymentMethod` | String | 필수 | 없음 | `CARD`는 일반 카드, `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
-> | `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-> | `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜. |
+| 필드 | 타입 | 필수 | 기본값 | 규칙 |
+| --- | --- | --- | --- | --- |
+| `splitType` | String | 필수 | 없음 | `EQUAL`은 전체 1/N, `BY_ITEM`은 품목별 분배다. |
+| `payerTripMemberId` | String | 필수 | 없음 | 실제 결제자의 여행 참여자 ID. 같은 여행의 회원 참여자만 지정할 수 있다. |
+| `paymentMethod` | String | 필수 | 없음 | `CARD`는 일반 카드, `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
+| `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜. |
 
 ## 오류 코드
 
 > 논의 필요
 >
-> 도메인 오류 코드의 이름, HTTP 대응과 안내 문구는 제안이다. 공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다. 개별 API의 오류 조건과 도메인 코드 이름은 팀 검토 후 확정한다.
+> 도메인 오류 코드의 이름, HTTP 대응과 안내 문구의 확정 여부
+
+공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
+
+| HTTP | 코드 | 조건 |
+| --- | --- | --- |
+| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+| 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 503 | `EXCHANGE_RATE_PROVIDER_UNAVAILABLE` | 외부 환율을 일시적으로 조회할 수 없음 |
+
+> 논의 필요
 >
-> | HTTP | 코드 | 조건 |
-> | --- | --- | --- |
-> | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-> | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
-> | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-> | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-> | 503 | `EXCHANGE_RATE_PROVIDER_UNAVAILABLE` | 외부 환율을 일시적으로 조회할 수 없음 |
+> 개별 API의 오류 조건과 도메인 코드 이름은 팀 검토 후 확정한다.
