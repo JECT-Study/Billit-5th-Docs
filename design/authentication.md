@@ -119,8 +119,7 @@ sequenceDiagram
 
 > 논의 필요
 >
-> - 갱신 응답을 받지 못했을 때 재요청을 한 번만 받음 vs 여러 번 받음
-> - 직전 Refresh Token의 유예 시간 30초
+> 갱신 재요청 횟수와 직전 Refresh Token의 유예 시간: [인증 만료 정책](../policy/authentication.md#인증-만료)의 논의 필요를 따른다.
 
 ### 검증
 
