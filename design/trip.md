@@ -1,76 +1,172 @@
 # 여행 설계서
 
-## 여행 테이블 변경
+## 개요
 
-| 대상 | 기존 검토 DDL | 변경 방향 | 확정 범위 |
+이 설계서는 여행과 여행 참여자의 저장 구조, 참여 인원이 바뀌는 요청의 잠금과 여행 생성 멱등성을 다룬다.
+업무 규칙은 [여행 정책서](../policy/trip.md)를 따른다.
+
+## 여행과 참여자
+
+서버는 참여자마다 `trip_member` 행 하나를 두고, 여행 확정과 인원이 바뀌는 요청을 `trip` 행 잠금으로 차례로 처리한다.
+
+### 저장 데이터
+
+| 이름 | 타입 | 제약 | 뜻 |
 | --- | --- | --- | --- |
-| `trip_member.guest_name` | `VARCHAR(10)`, 비로그인 참여자 이름. `UNIQUE (trip_id, guest_name)` | 컬럼명을 `trip_nickname`으로 바꾸고 로그인 참여자의 여행방 닉네임도 함께 저장. `UNIQUE (trip_id, trip_nickname)` 유지 | 로그인 참여자와 비로그인 참여자 모두의 여행방 닉네임을 저장한다. 계정 닉네임(`member.nickname`)과 구분하고 비로그인 참여자 전용이 아님을 드러내도록 컬럼명을 `trip_nickname`으로 바꾼다. 같은 여행에서는 로그인 여부와 관계없이 이름 중복을 금지하며 여행 참여, 내 여행방 닉네임 수정, 비로그인 참여자 등록과 이름 수정에 모두 적용한다. |
-| `trip.members_locked_at` | `TIMESTAMPTZ NULL`, NULL이면 참여자 초대 중 | 여행 확정 여부를 `status` 컬럼으로 관리하고, 확정 시각은 `confirmed_at`으로 이름을 바꿔 함께 저장 | `status` 컬럼으로 관리하며, API에서는 `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후)로 전달한다. 확정 시각도 `confirmed_at`으로 함께 저장한다. |
-| `trip.country_code` | `CHAR(2) NOT NULL` | `VARCHAR(3) NOT NULL`로 변경하고 `custom_country_name VARCHAR(10) NULL`과 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 추가. 대표 국가 필수 유지 | 기타 국가를 국가 코드로 바꾸지 않는 것은 확정했다. `CHAR(2)`에는 기타 국가 텍스트를 담을 수 없어 문자열 컬럼 `custom_country_name`을 새로 추가하고 Flyway 마이그레이션에 넣는다. 기타 국가이면 `country_code`에 API 값과 같은 `ETC`를 저장하고, 세 글자를 담도록 `country_code`를 `VARCHAR(3)`으로 바꾼다. 기타 국가일 때만 `custom_country_name`에 값이 있고 대표 국가일 때는 NULL이 되도록 DB에도 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 제약을 둔다. API에서는 `countryCode`를 `ETC`로, 입력한 국가명을 `customCountryName`으로 전달한다. 기타 국가명은 최대 10자다([기본 정보](../policy/trip.md#기본-정보)). |
-| `trip_member.role` | `OWNER`, `MEMBER` | `OWNER`를 `ADMIN`으로 변경 | 역할 값 `ADMIN`, `MEMBER` 확정. 여행 생성자이자 관리자는 `role = ADMIN`인 행으로 판단하며, `trip`에 생성자 컬럼을 추가하지 않는다. 여행 생성 고유키를 사용한 회원 확인, 응답의 `myRole`, 여행 수정, 삭제와 확정 API의 관리자 권한 검증에 이 값을 사용한다([여행 생성 멱등성](#여행-생성-멱등성)). |
-| 참여자 상태 | 컬럼 없음. `member_id`와 `guest_name` 값으로 구분 | `trip_member`에 참여자 상태 enum 컬럼 `trip_member_status` 추가 | `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원)으로 관리한다. 여행에 참여할 때 `member_id`가 있는지 보고 상태를 정하고, 다른 기능은 이 값으로 구분한다. |
-| 나간 시각 | 컬럼 없음 | `trip_member.left_at` 추가 | 여행을 나가도 행을 지우지 않고 `left_at`에 나간 시각을 기록한다. 나갔는지는 참여자 상태 `LEFT`로 판단한다. 나간 회원의 행은 지출과 정산에서 계속 참조하고 ‘나간 회원’으로 표시하므로, 조회에서 제외하는 `deleted_at`을 쓰지 않는다. |
-| 회원 중복 참여 | `UNIQUE (trip_id, guest_name)`만 있고 같은 회원의 중복 참여를 막는 제약은 없음 | `UNIQUE (trip_id, member_id)` 추가 | 같은 회원이 한 여행에 두 번 참여하지 않게 한다. 여행 참여 구현과 함께 마이그레이션에 추가한다. 비로그인 참여자는 `member_id`가 NULL이므로 이 제약의 대상이 아니다. |
-| `trip_member` 행 생성 시점 | 자리마다 행을 미리 만들고, `member_id`와 `guest_name`이 모두 NULL인 행을 빈자리로 둔다 | 빈자리 행을 미리 만들지 않고, 참여나 비로그인 추가 때 행 생성 | 로그인 참여자가 참여하거나 관리자가 비로그인 참여자를 추가할 때 행을 만든다. 나간 회원이 확정 전에 다시 참여하면 새 행을 만들지 않고 기존 행을 다시 쓴다([재참여](../policy/trip.md#재참여)). 비로그인 참여자를 삭제하면 그 행을 지우고, 총인원을 바꿔도 행을 만들거나 지우지 않는다. 빈자리 수는 총인원에서 등록된 참여자 수를 빼서 계산한다([총인원과 빈자리](../policy/trip.md#총인원과-빈자리)). 정원 초과는 참여를 처리하는 트랜잭션에서 `trip` 행을 쓰기 잠금(`SELECT ... FOR UPDATE`)으로 조회한 뒤 등록된 참여자 수를 세어 막는다. 여행 확정과 인원이 바뀌는 요청(참여, 나가기, 비로그인 참여자 등록과 삭제, 총인원 변경)은 모두 `trip` 행을 먼저 잠그고, 확정 상태와 등록된 참여자 수를 확인한 뒤 변경한다. 같은 여행의 요청은 이 잠금으로 차례로 처리되어 정원과 확정 조건을 함께 지킨다. 잠금 대기에는 `lock_timeout`을 두고, 대기가 상한을 넘으면 서버는 재시도하지 않고 오류를 반환한다. 경합한 요청의 응답은 [여행 확정](../api-spec/trip.md#trip-11-여행-확정)을 따른다. 참여자 수 조회가 병목이 되면 `trip`에 등록 인원 컬럼을 두고 조건부 UPDATE로 바꾸는 방안을 검토한다. |
-| 여행 생성 고유키 | 없음 | `trip.idempotency_key UUID` 추가, 키 단독 UNIQUE | 여행 생성에만 사용하고 만료 없이 여행과 함께 보관한다. 여행과 같은 트랜잭션에 저장하며 키 단독 UNIQUE 제약을 둔다([여행 생성 멱등성](#여행-생성-멱등성)). |
+| `trip.country_code` | `VARCHAR(3)` | NOT NULL | 대표 국가 코드. 기타 국가이면 `ETC` |
+| `trip.custom_country_name` | `VARCHAR(10)` | NULL | 직접 입력한 기타 국가명. NULL이면 `country_code`가 `ETC`가 아님 |
+| `trip.member_capacity` | `INTEGER` | NOT NULL | 생성자를 포함한 총인원 |
+| `trip.status` | `trip_status` | NOT NULL | 여행 확정 상태. `UNCONFIRMED`(확정 전)와 `CONFIRMED`(확정 후) |
+| `trip.confirmed_at` | `TIMESTAMPTZ` | NULL | 여행 확정 시각. NULL이면 확정 전 |
+| `trip_member.member_id` | `BIGINT` | NULL, FK `member.id` | 로그인 참여자의 회원. NULL이면 비로그인 참여자 |
+| `trip_member.trip_nickname` | `VARCHAR(10)` | NULL | 로그인 참여자와 비로그인 참여자의 여행방 닉네임. NULL이면 탈퇴한 회원 |
+| `trip_member.role` | `trip_member_role` | NOT NULL | 여행별 역할. `ADMIN`(여행 생성자이자 관리자)과 `MEMBER` |
+| `trip_member.trip_member_status` | enum | 정하지 않음 | 참여자 상태. `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) |
+| `trip_member.left_at` | `TIMESTAMPTZ` | NULL | 여행을 나간 시각. NULL이면 나간 적이 없음 |
 
-`trip`, `trip_member`와 `member`의 기존 값은 백엔드 `develop`의 초기 마이그레이션 `V20261107063430__create_initial_schema.sql`(커밋 `c857020`)에서 확인했다.
+- `trip`에는 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 제약을 둔다.
+- `trip_member`에는 `UNIQUE (trip_id, trip_nickname)` 제약과 `UNIQUE (trip_id, member_id)` 제약을 둔다.
+- 서버는 `trip`에 생성자 컬럼을 두지 않고, `role = ADMIN`인 `trip_member` 행으로 여행 생성자이자 관리자를 판단한다. 근거: [Issue #27](https://github.com/JECT-Study/Billit-5th-Docs/issues/27)
+- 다른 업무 영역은 참여자를 `member.id`가 아닌 `trip_member.id`로 참조한다.
 
-같은 마이그레이션은 `guest_name`을 비로그인 참여자 이름이며 회원이나 빈자리이면 NULL인 컬럼으로 설명한다.
-로그인 참여자의 여행방 닉네임도 이 컬럼에 저장하므로 컬럼명을 `trip_nickname`으로 바꾸고, 유니크 제약(`uq_trip_member_trip_id_trip_nickname`)과 컬럼 주석도 여행방 닉네임 기준으로 고쳐야 한다.
-같은 주석의 '여행 시작 전 수정 가능'도 여행 확정 전과 후 모두 수정할 수 있는 기준으로 고쳐야 한다([여행방 닉네임](../policy/trip.md#여행방-닉네임), [비로그인 참여자](../policy/trip.md#비로그인-참여자)).
-빈자리 행을 만들지 않으므로 `trip_member`의 '자리'와 '빈자리' 주석도 함께 고쳐야 한다.
+### 처리 흐름
 
-### 예시: 여행방 닉네임이 이미 등록된 경우
+다음은 여행 확정과 인원이 바뀌는 요청의 처리 순서다.
 
-같은 여행의 `trip_member` 21에 `trip_nickname = 민수`가 있다면, 민수를 다시 등록하는 요청은 거절한다.
-다른 비회원 이름을 민수로 수정하려는 요청, 회원이 여행방 닉네임 민수로 참여하거나 자신의 여행방 닉네임을 민수로 수정하려는 요청도 같은 제약을 적용한다.
-요청이 동시에 들어와도 `(trip_id, trip_nickname)` UNIQUE로 같은 이름이 둘 다 저장되지 않게 한다.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as 앱
+    participant Server as 서버
+    participant DB as DB
 
-로그인 참여자의 여행방 닉네임도 `trip_nickname`에 저장하므로, 복합 UNIQUE 하나로 회원과 비회원 사이의 이름 중복까지 막는다.
-회원이 계정 닉네임(`member.nickname`)을 바꿔도 `trip_nickname`은 바뀌지 않는다.
+    App->>Server: 여행 확정 또는 인원 변경 요청
+    Server->>DB: BEGIN
+    Server->>DB: trip 행 SELECT FOR UPDATE
+    Server->>DB: 확정 상태와 등록된 참여자 수 조회
+    alt 변경 조건 충족
+        Server->>DB: trip 또는 trip_member 변경
+        Server->>DB: COMMIT
+        Server-->>App: 성공 응답
+    else 변경 조건 미충족
+        Server->>DB: ROLLBACK
+        Server-->>App: 오류 응답
+    end
+```
 
-참여자 연결은 계속 `trip_member.id`를 사용한다.
+- 인원이 바뀌는 요청은 여행 참여, 여행 나가기, 비로그인 참여자 등록과 삭제, 총인원 변경이다.
+- 로그인 참여자가 참여하거나 관리자가 비로그인 참여자를 등록하면 서버는 `trip_member` 행을 만든다.
+- 서버는 빈자리 행을 미리 만들지 않는다. 빈자리 수는 `trip.member_capacity`에서 등록된 참여자 수를 뺀 값이다([총인원과 빈자리](../policy/trip.md#총인원과-빈자리)).
+- 총인원을 바꾸면 서버는 `trip_member` 행을 만들거나 지우지 않는다.
+- 회원이 여행에 참여하면 서버는 `member_id`가 있는지 보고 참여자 상태를 정한다.
+- 회원이 여행을 나가면 서버는 행을 지우지 않고 참여자 상태를 `LEFT`로 바꾼다.
+- 회원이 여행을 나가면 서버는 `left_at`에 나간 시각을 기록한다.
+- 서버는 나간 회원의 행을 지출과 정산에서 계속 참조하므로 `deleted_at`으로 조회에서 제외하지 않는다.
+- 나간 회원이 확정 전에 다시 참여하면 서버는 새 행을 만들지 않고 기존 행을 다시 쓴다([재참여](../policy/trip.md#재참여)).
+- 관리자가 비로그인 참여자를 삭제하면 서버는 그 행을 지운다.
+- 대표 국가가 기타 국가이면 서버는 `country_code`에 `ETC`를, 입력한 국가명을 `custom_country_name`에 저장한다.
+- 회원이 계정 닉네임(`member.nickname`)을 바꿔도 서버는 `trip_nickname`을 바꾸지 않는다.
+
+다음은 여행방 닉네임 제약의 가상 예시다. 같은 여행의 참여자 행 21에 여행방 닉네임 `민수`가 있다고 가정한다.
+
+```text
+1. 관리자가 비로그인 참여자를 `민수`로 등록하거나 다른 비로그인 참여자의 이름을 `민수`로 수정한다.
+   결과: 서버는 요청을 거절한다.
+
+2. 회원이 여행방 닉네임 `민수`로 참여하거나 자신의 여행방 닉네임을 `민수`로 수정한다.
+   결과: 서버는 요청을 거절한다.
+
+3. 행 21의 회원이 계정 닉네임을 바꾼다.
+   결과: 행 21의 여행방 닉네임은 `민수`로 남는다.
+```
+
+### 트랜잭션과 동시성
+
+- 여행 확정이나 인원이 바뀌는 요청이 오면 서버는 같은 트랜잭션에서 `trip` 행을 `SELECT ... FOR UPDATE`로 먼저 잠근다. 근거: [Issue #25](https://github.com/JECT-Study/Billit-5th-Docs/issues/25)
+- 서버는 `trip` 행을 잠근 뒤에 확정 상태와 등록된 참여자 수를 확인한다.
+- 서버는 `trip` 행 잠금을 기다리는 시간에 `lock_timeout` 상한을 둔다.
+- 같은 여행방 닉네임의 저장 요청이 동시에 오면 서버는 `UNIQUE (trip_id, trip_nickname)` 제약으로 한 건만 저장한다.
+
+> 추후 검토
+>
+> 등록된 참여자 수 조회가 병목이 되면 `trip`에 등록 인원 컬럼을 두고 조건부 UPDATE로 바꾸는 방안을 검토한다.
+
+### 실패 처리
+
+- 잠금 대기가 `lock_timeout`을 넘으면 서버는 재시도하지 않고 오류를 반환한다. 응답은 [TRIP-11 여행 확정](../api-spec/trip.md#trip-11-여행-확정)을 따른다.
+- 같은 여행에 이미 있는 여행방 닉네임으로 등록하거나 수정하면 서버는 요청을 거절한다.
+- 같은 회원이 같은 여행에 다시 참여하면 서버는 `UNIQUE (trip_id, member_id)` 제약으로 두 번째 행을 저장하지 않는다.
+- 등록된 참여자 수가 총인원과 같으면 서버는 참여와 비로그인 참여자 등록을 거절한다.
 
 ## 여행 생성 멱등성
 
-앱은 여행 생성 요청의 `Idempotency-Key` 헤더에 UUID 형식의 고유키를 보낸다. 생성 시도마다 새 키를 만들고, 응답을 받지 못해 같은 요청을 다시 보낼 때만 같은 키를 사용한다. 서버는 같은 회원이 같은 키로 다시 보낸 요청에 여행과 생성자 참여 정보를 다시 만들지 않고 처음 만든 여행을 반환한다. 2026-11-06 API 스펙 검토에서 채택한 방향에 이어 키의 범위와 재응답 방식을 확정했다. 지출 생성의 재응답 방식까지 확정한 것은 아니다.
+앱은 여행 생성 요청의 `Idempotency-Key` 헤더에 UUID 형식의 고유키를 보내고, 서버는 같은 회원이 같은 키로 다시 보낸 요청에 처음 만든 여행을 반환한다.
 
-| 상황 | 서버의 처리 |
-| --- | --- |
-| 키가 없거나 UUID 형식이 아님 | `400`으로 거절한다. |
-| 요청 본문이 유효하지 않음 | 이미 사용한 키여도 고유키를 조회하지 않고 `400`으로 거절한다. |
-| 같은 회원이 같은 키와 유효한 본문으로 다시 요청 | 처음과 같이 `201 Created`와 `Location`을 반환하고, `data`에는 처음 만든 여행의 현재 정보를 담는다. |
-| 같은 회원이 같은 키로 유효한 본문의 값을 바꿔 요청 | 처음 요청의 본문과 비교하지 않고 처음 만든 여행을 반환한다. |
-| 다른 회원이 이미 사용한 키 | 기존 여행 정보를 반환하지 않고 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다. |
-| 그 키로 만든 여행이 삭제됨 | `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다. |
-| 같은 키의 요청이 동시에 도착 | 여행은 하나만 만든다. 늦게 처리된 요청에는 먼저 만든 여행을 다시 조회해 재요청과 같이 응답한다. |
+### 저장 데이터
 
-고유키는 여행 생성에만 사용하며, 키 하나로는 여행 하나만 만든다.
-키는 만료 없이 만든 여행과 함께 보관한다.
-서버는 요청자 인증과 요청 본문 검증(필수값, 형식과 범위, 여행 기간 순서, `countryCode`와 `customCountryName`의 조합)을 고유키 조회보다 먼저 실행한다.
-따라서 본문이 유효하지 않은 요청은 이미 성공한 고유키로 보낸 재요청이어도 고유키를 조회하지 않고 `400`으로 거절한다.
-앱이 생성 시도마다 새 키를 만들기 때문에, 본문 검증을 통과하고 같은 키로 온 요청은 응답을 받지 못한 같은 생성 요청의 재시도로 보고 처음 요청의 본문과 비교하지 않는다.
+| 이름 | 타입 | 제약 | 뜻 |
+| --- | --- | --- | --- |
+| `trip.idempotency_key` | `UUID` | NOT NULL, UNIQUE `uq_trip_idempotency_key` | 앱이 만든 여행 생성 고유키 |
 
-고유키로 기존 결과를 찾을 때도 요청자 인증을 검사하고, 키를 사용한 회원과 요청한 회원이 같은지 확인한다.
-여행, 생성자 참여 정보와 고유키는 전체 성공 또는 전체 실패를 보장해야 한다.
+- 서버는 고유키를 여행 생성에만 쓰며, 키 하나로 여행 하나만 만든다.
+- 서버는 고유키를 만료 없이 여행과 함께 보관한다.
+- 서버는 키를 사용한 회원을 그 키로 만든 여행의 `role = ADMIN`인 `trip_member.member_id`로 확인한다. 근거: [Issue #27](https://github.com/JECT-Study/Billit-5th-Docs/issues/27)
 
-여행 행에 `idempotency_key UUID`를 저장하고 키 단독 UNIQUE 제약을 둔다. 고유키는 여행과 같은 트랜잭션에 저장해 함께 성공하거나 실패하며, 같은 키의 요청이 동시에 와도 DB에서 두 번째 저장을 막는다([여행 테이블 변경](#여행-테이블-변경)).
+### 처리 흐름
 
-키를 사용한 회원은 그 키로 만든 여행의 `trip_member` 중 `role = ADMIN`인 행의 `member_id`로 확인하며, `trip`에는 생성자 컬럼을 추가하지 않는다.
-생성자 확인은 같은 키로 재요청이 왔을 때만 필요하므로, `trip`을 조회할 때 `ADMIN` 행을 한 번 조인해도 조회 비용은 거의 늘지 않는다.
-생성자를 `trip`에도 저장하면 생성자와 관리자를 두 곳에서 관리하게 되고, 관리자를 넘기는 기능이 생기면 어느 쪽을 기준으로 할지 다시 정해야 한다.
+다음은 여행 생성 요청의 처리 순서다.
 
-같은 키의 요청 두 개가 동시에 오면 늦게 처리된 요청은 고유키 UNIQUE 제약(`uq_trip_idempotency_key`) 위반으로 저장에 실패한다.
-PostgreSQL은 오류가 난 트랜잭션에서 더 이상 조회할 수 없으므로, 여행 생성 처리 전체를 하나의 트랜잭션으로 묶지 않는다.
-여행, 생성자 참여 정보와 고유키의 저장만 한 트랜잭션으로 묶는다.
-고유키 중복으로 저장에 실패하면 그 트랜잭션을 롤백한 뒤 새 트랜잭션에서 고유키로 여행을 다시 조회한다.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as 앱
+    participant Server as 서버
+    participant DB as DB
 
-다시 조회한 여행이 같은 회원이 만든 여행이면 `201 Created`와 `Location`을 반환하고, `data`에는 먼저 만든 여행의 현재 정보를 담는다.
-다른 회원이 만든 여행이거나 삭제된 여행이면 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
-다시 조회했을 때 여행 행이 없어도 삭제된 여행과 같이 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+    App->>Server: POST /api/v1/trips
+    Server->>Server: 인증과 본문 검증
+    Server->>DB: 고유키로 여행 조회
+    alt 기존 여행 없음
+        Server->>DB: 여행, 생성자 참여 정보와 고유키 저장
+        alt 저장 성공
+            Server-->>App: 201 Created
+        else 고유키 UNIQUE 위반
+            Server->>DB: 새 트랜잭션에서 고유키로 여행 조회
+            Server-->>App: 201 Created 또는 409 TRIP_IDEMPOTENCY_KEY_REUSED
+        end
+    else 기존 여행 있음
+        Server-->>App: 201 Created 또는 409 TRIP_IDEMPOTENCY_KEY_REUSED
+    end
+```
 
-저장 실패의 SQLSTATE가 `23505`(UNIQUE 위반)이고 위반한 제약 이름이 `uq_trip_idempotency_key`일 때만 고유키 중복으로 보고 여행을 다시 조회한다.
-다른 제약 위반은 고유키 중복으로 처리하지 않는다.
+- 앱은 생성 시도마다 새 키를 만들고, 응답을 받지 못해 같은 요청을 다시 보낼 때만 같은 키를 쓴다.
+- 서버는 요청자 인증과 본문 검증을 고유키 조회보다 먼저 실행한다.
+- 본문 검증 범위는 필수값, 형식과 범위, 여행 기간 순서, `countryCode`와 `customCountryName`의 조합이다.
+- 서버는 본문 검증을 통과한 같은 키의 요청을 같은 생성 요청의 재시도로 보고 처음 요청의 본문과 비교하지 않는다.
+- 고유키로 찾은 여행을 같은 회원이 만들었으면 서버는 `201 Created`와 `Location`을 반환하고, `data`에 그 여행의 현재 정보를 담는다.
 
-구현 시 동일 키 동시 요청과 응답 유실 후 재시도에서 여행 및 생성자 참여 정보가 한 번만 생성되는지 확인한다. 일부 저장 실패 시 전체 롤백, 다른 회원의 키 사용, 삭제한 여행의 키 재사용과 같은 키의 다른 본문도 함께 검증한다.
+### 트랜잭션과 동시성
+
+- 서버는 여행, 생성자 참여 정보와 고유키의 저장을 한 트랜잭션으로 묶는다.
+- 서버는 여행 생성 처리 전체를 한 트랜잭션으로 묶지 않는다. PostgreSQL은 오류가 난 트랜잭션에서 더 이상 조회할 수 없기 때문이다.
+- 고유키 중복으로 저장에 실패하면 서버는 그 트랜잭션을 롤백하고 새 트랜잭션에서 고유키로 여행을 다시 조회한다. 근거: [Issue #26](https://github.com/JECT-Study/Billit-5th-Docs/issues/26)
+- 같은 키의 요청이 동시에 오면 서버는 여행을 하나만 만들고, 늦게 처리한 요청에는 재요청과 같은 응답을 보낸다.
+
+### 실패 처리
+
+- 키가 없거나 UUID 형식이 아니면 서버는 `400`으로 거절한다.
+- 요청 본문이 유효하지 않으면 서버는 이미 사용한 키여도 고유키를 조회하지 않고 `400`으로 거절한다.
+- 다른 회원이 이미 사용한 키이면 서버는 기존 여행 정보를 반환하지 않고 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 그 키로 만든 여행이 삭제되었으면 서버는 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 다시 조회했을 때 여행 행이 없으면 서버는 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 저장 실패의 SQLSTATE가 `23505`이고 위반한 제약이 `uq_trip_idempotency_key`일 때만 서버는 고유키 중복으로 판단한다.
+- 저장 중 하나라도 실패하면 서버는 여행, 생성자 참여 정보와 고유키를 모두 롤백한다.
+
+### 검증
+
+- 같은 키의 요청이 동시에 오면 서버는 여행과 생성자 참여 정보를 한 번만 만든다.
+- 응답을 받지 못한 뒤 같은 키로 다시 요청하면 서버는 처음 만든 여행을 `201 Created`로 반환한다.
+- 저장 중 생성자 참여 정보 저장이 실패하면 서버는 여행과 고유키도 저장하지 않는다.
+- 다른 회원이 사용한 키로 요청하면 서버는 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 삭제한 여행의 키로 요청하면 서버는 `409 TRIP_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 같은 회원이 같은 키로 본문 값을 바꿔 요청하면 서버는 처음 만든 여행을 반환한다.
