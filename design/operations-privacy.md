@@ -136,16 +136,15 @@ IP 주소를 남기는 곳은 이 기록뿐이며, 웹 서버 접근 로그에�
 
 | 위치 | 지금 동작 | 바꿀 설정 |
 | --- | --- | --- |
-| Nginx | `client_body_buffer_size`(기본 16KB)보다 큰 요청 본문을 앱에 넘기기 전에 임시 파일(`client_body_temp`)로 쓴다. | 영수증 인식 경로만 `client_body_buffer_size`를 업로드 한도(15MB)와 같게 올린다. |
-| Spring | multipart의 `file-size-threshold`가 기본값 0이라 업로드 파일을 Tomcat 임시 디렉터리에 파일로 받는다. | `file-size-threshold`를 업로드 한도 이상으로 올리거나, multipart 대신 요청 본문을 바이트로 받는다. |
+| Nginx | `client_body_buffer_size`(기본 16KB)보다 큰 요청 본문을 앱에 넘기기 전에 임시 파일(`client_body_temp`)로 쓴다. | 영수증 인식 경로만 `client_body_buffer_size`를 요청 본문 한도(`client_max_body_size`, 지금 15MB)와 같게 올린다. 운영은 진입점 Nginx 한 곳에서 바꾼다. 개발은 요청이 진입점 Nginx를 거쳐 개발 게이트웨이 Nginx로 한 번 더 넘어가므로 두 곳 모두에서 바꾼다. |
+| Spring | multipart의 `file-size-threshold`가 기본값 0이라 업로드 파일을 Tomcat 임시 디렉터리에 파일로 받는다. | `file-size-threshold`를 요청 본문 한도 이상으로 올리거나, multipart 대신 요청 본문을 바이트로 받는다. |
 
 이미지를 메모리에 두므로 동시에 처리하는 영수증 인식 요청의 수를 제한한다.
-운영 앱 컨테이너의 메모리 한도는 2GB다.
 
 이미지가 디스크에 남지 않는지는 다음 두 가지로 확인한다.
 
 - 영수증 인식 구현 PR에 실제 이미지를 업로드한 뒤 Tomcat 임시 디렉터리에 파일이 없는지 검사하는 테스트를 둔다.
-- dev 배포 후 Nginx의 `client_body_temp`가 비어 있는지 확인한다.
+- dev 배포 후 진입점 Nginx와 개발 게이트웨이 Nginx의 `client_body_temp`가 모두 비어 있는지 확인한다.
 
 > 진행 중
 >
@@ -154,3 +153,8 @@ IP 주소를 남기는 곳은 이 기록뿐이며, 웹 서버 접근 로그에�
 > 논의 필요
 >
 > 동시에 처리할 영수증 인식 요청의 최대 수를 구현할 때 정한다.
+> 운영 앱 컨테이너의 메모리 한도(2GB) 안에서 정한다.
+> 요청 하나가 쓰는 메모리는 Gemini inline 전송의 base64 인코딩(약 1.33배)과 처리 중 복사본을 고려해 원본 크기의 2~3배로 잡는다.
+>
+> 15MB는 Nginx가 모든 요청에 적용하는 본문 한도이며, 영수증 이미지의 용량 상한은 [영수증 인식 API](../api-spec/expense.md#exp-09-영수증-인식)에서 아직 정하지 않았다.
+> 상한이 정해지면 Nginx 버퍼, Spring 기준값과 동시 요청 수를 그 값에 맞춰 다시 정한다.
