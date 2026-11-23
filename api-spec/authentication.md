@@ -93,7 +93,7 @@ Apple 로그인 응답을 받지 못하면 앱은 소셜 인증을 다시 진행
 >
 > 같은 `idToken`의 재요청을 막으려면 `nonce` 검증이나 일회용 처리를 추가하고 앱과 서버를 함께 변경해야 한다. 1차 MVP에 도입할지 정한다.
 
-ID 토큰의 검증 조건과 제공자별 발급 대상은 [소셜 로그인 설계](../design/authentication.md#소셜-로그인)를, Apple 인가 코드 교환은 [Apple 연결 해제 토큰 설계](../design/authentication.md#apple-연결-해제-토큰)를 따른다. 가입 전용 토큰의 형식과 유효 기간은 [토큰 종류와 검증](../design/authentication.md#토큰-종류와-검증)과 [가입 전용 토큰 설계](../design/authentication.md#가입-전용-토큰)를 따른다.
+ID 토큰의 검증 조건, 제공자별 발급 대상과 Apple 인가 코드 교환은 [소셜 로그인 설계](../design/authentication.md#소셜-로그인)를 따른다. 가입 전용 토큰의 형식과 유효 기간은 [토큰과 로그인 세션](../design/authentication.md#토큰과-로그인-세션)과 [가입 전용 토큰 설계](../design/authentication.md#가입-전용-토큰)를 따른다.
 
 ### AUTH-02 Access Token 갱신
 
@@ -210,7 +210,7 @@ HTTP `204 No Content`를 반환한다. 응답 본문은 없다.
 
 로그아웃해도 회원 계정과 여행의 지출 및 정산 기록은 유지한다. 다른 기기의 로그인 상태를 함께 해제하지 않는다.
 
-서버는 Access Token과 Refresh Token에 담긴 로그인 세션 ID로 세션을 찾아 종료 시각을 기록한다. 같은 세션의 갱신과 로그아웃이 동시에 들어오면 서버는 세션 버전으로 충돌을 감지한다. 세션의 저장 구조는 [로그인 세션 저장](../design/authentication.md#로그인-세션-저장)을, 로그아웃 처리는 [로그아웃 설계](../design/authentication.md#로그아웃)를 따른다.
+서버는 Access Token과 Refresh Token에 담긴 로그인 세션 ID로 세션을 찾아 종료 시각을 기록한다. 같은 세션의 갱신과 로그아웃이 동시에 들어오면 서버는 세션 버전으로 충돌을 감지한다. 세션의 저장 구조와 로그아웃 처리는 [토큰과 로그인 세션 설계](../design/authentication.md#토큰과-로그인-세션)를 따른다.
 
 ## 클라이언트 처리 범위
 

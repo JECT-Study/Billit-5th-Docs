@@ -95,3 +95,22 @@ IP 주소를 남기는 곳은 이 기록뿐이며, 웹 서버 접근 로그에�
 1차 기술 대응(원인 파악, 접근 차단, 로그 보존)은 BE 담당자 3명이 1차, 2차, 3차 순서로 맡는다. 담당자의 연락처는 이 문서에 적지 않고 유출 대응 매뉴얼에서 관리한다. 예방 점검은 출시 전 1회 하고, 이후 분기마다 1회 한다.
 
 클라우드 사업자에게 보안 사고 지원을 요청할 때는 OCI 콘솔의 도움말(?)에서 Create a Support request를 선택하고 Service Request로 접수한다. 전화는 오라클 한국 고객지원(+82 1588-8501)으로 한다.
+
+## 서버 설정
+
+| 환경 변수 | 사용하는 곳 |
+| --- | --- |
+| `JWT_SECRET` | Billit 토큰 서명. 64바이트 이상의 값을 base64로 인코딩해 넣는다. |
+| `GOOGLE_CLIENT_ID` | Google ID 토큰의 발급 대상 검증 |
+| `KAKAO_NATIVE_APP_KEY` | Kakao ID 토큰의 발급 대상 검증 |
+| `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID`, `APPLE_PRIVATE_KEY_BASE64` | Apple ID 토큰 검증과 인가 코드 교환 |
+| `AUTH_TOKEN_ENCRYPTION_KEY` | Apple Refresh Token 암호화 |
+
+개발 서버와 운영 서버에 값을 등록했다. 값은 저장소에 기록하지 않는다.
+
+`JWT_SECRET`은 개발 서버와 운영 서버에 서로 다른 값을 쓰며, 값이 없으면 서버가 시작되지 않는다. `GOOGLE_CLIENT_ID`는 개발 서버에 개발용, 운영 서버에 출시용 웹 클라이언트 ID를 쓴다.
+
+> 확인 필요
+>
+> Kakao ID 토큰은 Kakao 개발자 콘솔에서 OpenID Connect를 활성화해야 발급된다. 활성화 여부를 확인하지 못했다.
+
