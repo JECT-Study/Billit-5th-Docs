@@ -133,7 +133,7 @@ Content-Type: `application/json`
 | `survey.gender` | String | 선택 | 없음 | 선택한 성별 코드 |
 | `survey.isTripOrganizer` | Boolean | 선택 | 없음 | 여행 총무 여부 |
 | `survey.settlementPainPoints` | Array&lt;String&gt; | 선택 | 없음 | 정산 시 번거로운 점을 최대 2개까지 전달한다. 중복은 허용하지 않는다. |
-| `survey.otherSettlementPainPoint` | String | 선택 | 없음 | `settlementPainPoints`에 `OTHER`가 있을 때만 전달할 수 있다. |
+| `survey.otherSettlementPainPoint` | String | 선택 | 없음 | `settlementPainPoints`에 `ETC`가 있을 때만 전달할 수 있다. |
 
 계정 닉네임, 이름과 나이는 받지 않는다. 요청에 `nickname`을 보내면 정의하지 않은 필드로 보고 `400 COMMON_INVALID_REQUEST`를 반환한다.
 
@@ -152,7 +152,7 @@ Content-Type: `application/json`
   ],
   "survey": {
     "isTripOrganizer": true,
-    "settlementPainPoints": ["OTHER"],
+    "settlementPainPoints": ["ETC"],
     "otherSettlementPainPoint": "여러 통화로 결제하면 정산하기 어려워요."
   }
 }
@@ -160,7 +160,7 @@ Content-Type: `application/json`
 
 > 논의 필요
 >
-> - 성별과 정산 설문의 선택지 코드, `OTHER` 선택 시 직접 입력의 필수 여부를 정한다.
+> - 성별과 정산 설문의 선택지 코드, `ETC`를 선택했을 때 직접 입력의 필수 여부를 정한다.
 
 #### 성공 응답
 
@@ -231,7 +231,7 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
 | `memberId` | String | 아니요 | 항상 | Billit 회원 계정 ID. 문자열로 전달한다. |
-| `nickname` | String | 아니요 | 항상 | 가입 시 설정한 계정 닉네임. |
+| `nickname` | String | 아니요 | 항상 | 계정 닉네임. |
 | `profileImageUrl` | String | 예 | 항상 | 미등록이면 null. |
 | `socialProvider` | String | 아니요 | 항상 | `GOOGLE`, `APPLE`, `KAKAO` 중 하나. |
 
