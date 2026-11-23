@@ -540,6 +540,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [Invitation](#invitati
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | `tripId`가 여행 ID 형식이 아님 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 요청한 회원이 해당 여행의 관리자가 아님. 여행에 참여하지 않은 회원도 포함 |
 | 404 | `COMMON_NOT_FOUND` | `tripId`에 해당하는 여행이 없거나 삭제됨 |
@@ -550,11 +551,7 @@ HTTP `200 OK`를 반환한다. 공통 응답의 `data`는 [Invitation](#invitati
 확정 후 신규 초대를 허용하지 않는다. 초대 코드는 여행을 생성할 때 발급하며, 확정 전까지 시간 제한 없이 유효하고 확정하면 초대가 자동으로 종료된다. 초대를 수동으로 중지하는 API는 두지 않는다. 1차 MVP에서는 초대 코드를 재발급하지 않는다([초대 코드와 링크](../policy/trip.md#초대-코드와-링크)와 같은 규칙).
 
 초대 URL은 환경별로 설정한 초대 링크 기본 주소 뒤에 초대 코드를 붙여 `{기본 주소}/{초대 코드}` 형식으로 만든다.
-
-> 확인 필요
->
-> 기본 주소가 가리킬 웹 초대 화면의 경로는 FE에 확인 중이다. 예시의 `/invitations`는 확정된 경로가 아니다.
-> 출처: [Billit-5th-Client #34](https://github.com/JECT-Study/Billit-5th-Client/issues/34#issuecomment-7007199703)
+기본 주소는 웹 초대 화면의 경로 `/invitations`까지 포함하므로, 초대 URL의 경로는 `/invitations/{초대 코드}`가 된다.
 
 ### TRIP-06 초대 코드 검색
 
