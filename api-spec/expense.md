@@ -668,6 +668,10 @@ Content-Type: `application/json`
 
 요청 필드: [ExpenseInput](#expenseinput).
 
+> 논의 필요
+>
+> 다음 요청 모델과 예시의 확정 여부
+
 ```json
 {
   "name": "식사",
@@ -686,10 +690,6 @@ Content-Type: `application/json`
   ]
 }
 ```
-
-> 논의 필요
->
-> 다음 요청 모델과 예시의 확정 여부
 
 #### 성공 응답
 
