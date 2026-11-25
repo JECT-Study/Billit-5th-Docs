@@ -399,7 +399,7 @@ HTTP `200 OK`를 반환한다.
 ## 개인 기록 변경 API 후보
 
 개인 환율의 수정과 삭제를 제공하기로 정하면 `PATCH /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`와 `DELETE /api/v1/trips/{tripId}/exchange-rates/{exchangeRateId}`를 둔다.
-1차 MVP에서 서버는 직접 수정한 환율을 개인 환율 기록에 자동 저장한다([개인 환율 기록](../policy/exchange-rate.md#개인-환율-기록), [지출 환율](../policy/exchange-rate.md#지출-환율)).
+1차 MVP에서 본인 현금이나 트래블 카드 지출의 환율을 직접 수정하면 서버는 그 환율을 개인 환율 기록에 자동 저장한다([개인 환율 기록](../policy/exchange-rate.md#개인-환율-기록), [지출 환율](../policy/exchange-rate.md#지출-환율)).
 
 > 논의 필요
 >
