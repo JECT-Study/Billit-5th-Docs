@@ -83,7 +83,7 @@ HTTP `200 OK`와 `data`를 반환한다.
 
 소셜 제공자와 제공자 내부 계정 ID의 조합으로 회원을 찾는다. 다른 소셜 계정의 여행과 정산 기록을 자동으로 합치지 않는다. 소셜 로그인에 실패하거나 사용자가 취소하면 가입과 로그인을 완료하지 않는다.
 
-가입 미완료 사용자에게는 [가입 전용 토큰](../design/registration-token.md)을 발급한다. 일반 회원용 Access Token과 Refresh Token은 가입 완료 후 발급한다.
+가입 미완료 사용자에게는 [가입 전용 토큰](../design/authentication.md#가입-전용-토큰)을 발급한다. 일반 회원용 Access Token과 Refresh Token은 가입 완료 후 발급한다.
 
 Apple 로그인 응답을 받지 못하면 앱은 소셜 인증을 다시 진행해 새 `authorizationCode`를 받는다. 앱은 같은 코드로 로그인 요청을 자동 재시도하지 않으며, 서버도 같은 코드의 교환을 자동 재시도하지 않는다.
 
@@ -93,7 +93,7 @@ Apple 로그인 응답을 받지 못하면 앱은 소셜 인증을 다시 진행
 >
 > 같은 `idToken`의 재요청을 막으려면 `nonce` 검증이나 일회용 처리를 추가하고 앱과 서버를 함께 변경해야 한다. 1차 MVP에 도입할지 정한다.
 
-ID 토큰의 검증 조건과 제공자별 발급 대상은 [소셜 로그인 설계](../design/authentication.md#소셜-로그인)를, Apple 인가 코드 교환은 [Apple 연결 해제 토큰 설계](../design/authentication.md#apple-연결-해제-토큰)를 따른다. 가입 전용 토큰의 형식과 유효 기간은 [토큰 종류와 검증](../design/authentication.md#토큰-종류와-검증)과 [가입 전용 토큰 설계](../design/registration-token.md)를 따른다.
+ID 토큰의 검증 조건, 제공자별 발급 대상과 Apple 인가 코드 교환은 [소셜 로그인 설계](../design/authentication.md#소셜-로그인)를 따른다. 가입 전용 토큰의 형식과 유효 기간은 [토큰과 로그인 세션](../design/authentication.md#토큰과-로그인-세션)과 [가입 전용 토큰 설계](../design/authentication.md#가입-전용-토큰)를 따른다.
 
 ### AUTH-02 Access Token 갱신
 
@@ -210,7 +210,7 @@ HTTP `204 No Content`를 반환한다. 응답 본문은 없다.
 
 로그아웃해도 회원 계정과 여행의 지출 및 정산 기록은 유지한다. 다른 기기의 로그인 상태를 함께 해제하지 않는다.
 
-서버는 Access Token과 Refresh Token에 담긴 로그인 세션 ID로 세션을 찾아 종료 시각을 기록한다. 같은 세션의 갱신과 로그아웃이 동시에 들어오면 서버는 세션 버전으로 충돌을 감지한다. 세션의 저장 구조는 [로그인 세션 저장](../design/authentication.md#로그인-세션-저장)을, 로그아웃 처리는 [로그아웃 설계](../design/authentication.md#로그아웃)를 따른다.
+서버는 Access Token과 Refresh Token에 담긴 로그인 세션 ID로 세션을 찾아 종료 시각을 기록한다. 같은 세션의 갱신과 로그아웃이 동시에 들어오면 서버는 세션 버전으로 충돌을 감지한다. 세션의 저장 구조와 로그아웃 처리는 [토큰과 로그인 세션 설계](../design/authentication.md#토큰과-로그인-세션)를 따른다.
 
 ## 클라이언트 처리 범위
 
