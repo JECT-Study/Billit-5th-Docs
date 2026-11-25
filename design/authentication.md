@@ -58,11 +58,11 @@ sequenceDiagram
         Server-->>App: 401 인증 실패
     end
     App->>Server: POST /api/v1/auth/token-refreshes
-    Server->>DB: Refresh Token 해시로 세션 조회
+    Server->>DB: sid의 로그인 세션 조회
     alt 현재 토큰 또는 유예 조건 안의 직전 토큰
         Server->>DB: 새 토큰 해시 저장과 기존 해시 이동
         Server-->>App: 200 새 Access Token과 Refresh Token
-    else 유예 조건 밖의 직전 토큰
+    else 현재 토큰도 유예 조건 안의 직전 토큰도 아닌 토큰
         Server->>DB: 세션 종료 시각 기록
         Server-->>App: 401 AUTH_REFRESH_TOKEN_INVALID
     end
@@ -109,8 +109,8 @@ sequenceDiagram
 
 - 회원 API에 Refresh Token이나 가입 전용 토큰을 보내면 서버는 `401`로 거절한다.
 - Access Token의 `sid` 세션이 없거나 `revoked_at`이 기록돼 있으면 서버는 `401`로 거절한다.
-- 유예 조건 밖의 직전 Refresh Token으로 갱신하면 서버는 그 세션의 `revoked_at`을 기록한다.
-- 유예 조건 밖의 직전 Refresh Token으로 갱신하면 서버는 `401 AUTH_REFRESH_TOKEN_INVALID`로 거절한다.
+- 현재 토큰도 유예 조건 안의 직전 토큰도 아닌 Refresh Token으로 갱신하면 서버는 그 세션의 `revoked_at`을 기록한다.
+- 현재 토큰도 유예 조건 안의 직전 토큰도 아닌 Refresh Token으로 갱신하면 서버는 `401 AUTH_REFRESH_TOKEN_INVALID`로 거절한다.
 - 재사용을 감지해 세션을 종료해도 서버는 같은 회원의 다른 세션을 유지한다.
 - 만료됐거나 종료된 세션의 Refresh Token으로 갱신하면 서버는 `401 AUTH_REFRESH_TOKEN_INVALID`로 거절한다.
 - 만료된 Access Token을 헤더에 붙여 로그아웃하면 서버는 본문을 확인하지 않고 `401`로 거절한다.
@@ -128,7 +128,7 @@ sequenceDiagram
 - 로그아웃한 세션의 Access Token으로 요청하면 서버는 Access Token이 만료되기 전이라도 `401`로 거절한다.
 - 같은 Refresh Token으로 동시에 갱신하면 서버는 새 토큰을 한 번만 발급한다.
 - 유예 조건 안의 직전 Refresh Token으로 재요청하면 서버는 새 토큰을 한 번만 발급한다.
-- 유예 조건 밖의 직전 Refresh Token으로 요청하면 서버는 그 세션을 종료한다.
+- 현재 토큰도 유예 조건 안의 직전 토큰도 아닌 Refresh Token으로 요청하면 서버는 그 세션을 종료한다.
 - 상태 확인 경로를 Access Token 없이 요청하면 서버는 인증 오류로 거절하지 않는다.
 
 ## 소셜 로그인
@@ -168,17 +168,23 @@ sequenceDiagram
     App->>Server: POST /api/v1/auth/social-logins
     Server->>Provider: 공개키 목록 조회
     Server->>Server: ID 토큰 검증
-    Server->>DB: 제공자와 제공자 사용자 ID로 회원 조회
-    alt 가입 완료 회원
-        Server->>DB: 로그인 세션 저장
-    else 가입하지 않은 사용자
-        Server->>DB: 가입 중 회원 행 저장 또는 재사용
-    end
     opt Apple 로그인
         Server->>Provider: 인가 코드 교환
+        Server->>Server: 교환 결과의 사용자 ID와 ID 토큰의 사용자 ID 비교
+    end
+    Server->>DB: 제공자와 제공자 사용자 ID로 회원 조회
+    opt 가입하지 않은 사용자
+        Server->>DB: 가입 중 회원 행 저장
+    end
+    opt Apple 로그인
         Server->>DB: 암호화한 Apple Refresh Token 저장
     end
-    Server-->>App: 200 회원용 토큰 또는 가입 전용 토큰
+    alt 가입 완료 회원
+        Server->>DB: 로그인 세션 저장
+        Server-->>App: 200 회원용 토큰
+    else 가입 중 회원
+        Server-->>App: 200 가입 전용 토큰
+    end
 ```
 
 - 앱은 Apple 로그인 요청에 `idToken`과 `authorizationCode`를 보낸다.
@@ -199,6 +205,7 @@ sequenceDiagram
 
 - 제공자가 장애나 타임아웃으로 응답하지 않으면 서버는 `503 AUTH_SOCIAL_PROVIDER_UNAVAILABLE`로 응답한다.
 - ID 토큰 검증에 실패하면 서버는 `401 AUTH_SOCIAL_AUTHENTICATION_FAILED`로 거절한다.
+- Apple 인가 코드 교환 결과의 사용자 ID가 ID 토큰의 사용자 ID와 다르면 서버는 회원 행을 만들지 않고 `401 AUTH_SOCIAL_AUTHENTICATION_FAILED`로 거절한다.
 - 탈퇴(`WITHDRAWN`) 회원의 소셜 계정으로 로그인하면 서버는 `401 AUTH_SOCIAL_AUTHENTICATION_FAILED`로 거절한다.
 - 탈퇴 처리로 `social_provider_user_id`를 지운 소셜 계정으로 로그인하면 서버는 가입 중 회원 행을 새로 만든다.
 - Apple 로그인 응답을 받지 못하면 앱은 Apple 인증부터 다시 진행해 새 인가 코드를 받는다.
@@ -232,11 +239,16 @@ sequenceDiagram
     App->>Server: GET /api/v1/me/registration
     Server-->>App: 200 가입 정보
     App->>Server: POST /api/v1/me/registration
-    opt 가입 중 회원
-        Server->>DB: 가입 정보 저장과 가입 완료 전환
+    Server->>DB: 가입 전용 토큰의 회원 상태 조회
+    alt 가입 중 회원
+        Server->>DB: 가입 정보 저장, 가입 완료 전환과 로그인 세션 저장
+        Server-->>App: 200 회원용 토큰
+    else 가입 완료 회원
+        Server->>DB: 로그인 세션 저장
+        Server-->>App: 200 회원용 토큰
+    else 탈퇴 회원
+        Server-->>App: 401 COMMON_UNAUTHORIZED
     end
-    Server->>DB: 로그인 세션 저장
-    Server-->>App: 200 회원용 토큰
 ```
 
 - 서버는 검증한 소셜 제공자와 제공자 내부 계정 ID로 가입 주체를 정한다.
@@ -270,7 +282,8 @@ sequenceDiagram
 
 - 가입 전용 토큰이 없거나 만료되었거나 변조되었으면 서버는 `401 COMMON_UNAUTHORIZED`로 거절한다.
 - 가입 전용 토큰으로 토큰 갱신을 요청하면 서버는 회원용 토큰을 발급하지 않는다.
-- 이미 가입을 완료한 회원의 가입 전용 토큰으로 가입 정보를 조회하면 서버는 `401 COMMON_UNAUTHORIZED`로 거절한다.
+- 이미 가입을 완료한 회원의 가입 전용 토큰으로 가입 정보를 조회하면 서버는 `403 COMMON_FORBIDDEN`으로 거절한다.
+- 가입 전용 토큰의 회원이 탈퇴(`WITHDRAWN`)했으면 서버는 가입 정보 조회와 가입 완료를 `401 COMMON_UNAUTHORIZED`로 거절하고 로그인 세션을 만들지 않는다.
 - 가입 완료 검증이나 트랜잭션이 실패하면 서버는 회원용 토큰을 반환하지 않는다. 오류 코드는 [USER-03 가입 완료](../api-spec/user.md#user-03-가입-완료)의 오류 표를 따른다.
 - 가입 완료 응답을 받지 못하면 앱은 같은 가입 전용 토큰과 같은 가입 내용으로 가입 완료를 다시 요청한다.
 - 가입 완료를 커밋한 뒤 회원용 토큰 발급에 실패해도 앱은 같은 가입 전용 토큰으로 가입 완료를 다시 요청한다.
@@ -282,7 +295,8 @@ sequenceDiagram
 - 가입 전용 토큰으로 토큰 갱신을 요청하면 서버는 회원용 토큰을 발급하지 않는다.
 - 가입 요청에 다른 소셜 계정 ID를 보내도 서버는 가입 전용 토큰에 연결된 회원 행으로 가입을 완료한다.
 - 만료되거나 변조된 가입 전용 토큰으로 요청하면 서버는 `401 COMMON_UNAUTHORIZED`로 거절한다.
-- 가입을 완료한 회원의 가입 전용 토큰으로 가입 정보를 조회하면 서버는 `401 COMMON_UNAUTHORIZED`로 거절한다.
+- 가입을 완료한 회원의 가입 전용 토큰으로 가입 정보를 조회하면 서버는 `403 COMMON_FORBIDDEN`으로 거절한다.
+- 탈퇴한 회원의 가입 전용 토큰으로 가입 완료를 요청하면 서버는 `401 COMMON_UNAUTHORIZED`로 거절한다.
 - 같은 소셜 계정으로 가입 완료를 동시에 요청하면 서버는 회원과 약관 동의 기록을 하나씩만 저장한다.
 - 가입 완료 응답을 받지 못한 뒤 같은 요청을 다시 보내면 서버는 회원과 약관 동의 기록을 추가로 저장하지 않는다.
 - 가입을 커밋한 뒤 토큰 발급에 실패하고 같은 요청을 다시 보내면 서버는 회원용 토큰을 발급한다.
