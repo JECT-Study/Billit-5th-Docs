@@ -198,6 +198,10 @@ Content-Type: `application/json`
 
 요청 필드: [TripCreate](#tripcreate).
 
+> 논의 필요
+>
+> 다음 요청 예시의 확정 여부
+
 ```json
 {
   "name": "도쿄 여행",
@@ -224,10 +228,6 @@ Content-Type: `application/json`
   "tripNickname": "민지"
 }
 ```
-
-> 논의 필요
->
-> 다음 요청 예시의 확정 여부
 
 #### 성공 응답
 
@@ -268,14 +268,14 @@ HTTP `201 Created`와 생성한 여행의 주소를 담은 `Location` 헤더를 
 | 400 | `COMMON_INVALID_REQUEST` | `Idempotency-Key`가 없거나 UUID 형식이 아님 |
 | 409 | `TRIP_IDEMPOTENCY_KEY_REUSED` | 다른 회원이 이미 사용한 고유키이거나, 그 키로 만든 여행이 삭제됨 |
 
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
+
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`인데 누락한 요청도 포함 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-
-> 논의 필요
->
-> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -530,16 +530,16 @@ HTTP `200 OK`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 필드에 `null`을 보내거나 필드를 하나도 보내지 않음 |
 | 409 | `TRIP_CAPACITY_CHANGE_NOT_ALLOWED` | 확정 후 인원을 변경하거나 등록 인원보다 정원을 줄이려 함 |
 
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
+
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 형식 또는 값의 범위가 올바르지 않음. 최종 `countryCode`가 `ETC`가 아닌데 `customCountryName`을 보내거나, `ETC`로 바꾸면서 누락한 요청도 포함 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-
-> 논의 필요
->
-> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -781,7 +781,7 @@ Content-Type: `application/json`
 
 > 논의 필요
 >
-> 경로, 요청, 응답과 오류 코드의 확정 여부
+> 경로, 요청과 응답의 확정 여부
 
 #### 인증
 
@@ -840,6 +840,10 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 추가하려 함 |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
+
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
@@ -861,7 +865,7 @@ HTTP `201 Created`와 등록한 비로그인 참여자의 주소를 담은 `Loca
 
 > 논의 필요
 >
-> 경로, 요청, 응답과 오류 코드의 확정 여부
+> 경로, 요청과 응답의 확정 여부
 
 #### 인증
 
@@ -920,6 +924,10 @@ HTTP `200 OK`를 반환한다.
 | --- | --- | --- |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
+
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
@@ -967,16 +975,16 @@ HTTP `204 No Content`를 반환한다. 응답 Body는 없다.
 | --- | --- | --- |
 | 409 | `TRIP_ALREADY_CONFIRMED` | 확정 후 비로그인 참여자를 삭제하려 함 |
 
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
+
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-
-> 논의 필요
->
-> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -1063,16 +1071,16 @@ HTTP `200 OK`를 반환한다.
 | --- | --- | --- |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
+
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 그 여행의 참여자가 아님. 이미 여행을 나간 회원의 요청을 포함 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 여행이 없거나 삭제됨 |
-
-> 논의 필요
->
-> 오류 매핑의 확정 여부
 
 #### 처리 규칙
 
@@ -1316,7 +1324,7 @@ HTTP `204 No Content`를 반환한다.
 
 > 논의 필요
 >
-> 경로, 요청, 응답과 오류 코드의 확정 여부
+> 경로, 요청과 응답의 확정 여부
 
 #### 인증
 
@@ -1348,6 +1356,10 @@ HTTP `204 No Content`를 반환한다.
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
 | 404 | `COMMON_NOT_FOUND` | 이미 삭제한 여행임. 삭제 응답을 받지 못해 다시 보낸 요청도 포함 |
+
+> 논의 필요
+>
+> 아래 오류 매핑의 확정 여부
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
