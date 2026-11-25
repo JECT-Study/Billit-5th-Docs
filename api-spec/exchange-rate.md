@@ -423,7 +423,7 @@ HTTP `200 OK`를 반환한다.
 | `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeMethod` | String | 아니요 | 항상 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
 | `exchangeDate` | String | 아니요 | 항상 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
-| `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 등록 시각. 최근 기록 선택 기준으로 사용할지는 논의 필요. |
+| `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 최초 등록 시각. 최근 기록을 고르는 기준이다. |
 
 ### PersonalRateInput
 
