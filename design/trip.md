@@ -21,7 +21,7 @@
 | `trip_member.member_id` | `BIGINT` | NULL, FK `member.id` | 로그인 참여자의 회원. NULL이면 비로그인 참여자 |
 | `trip_member.trip_nickname` | `VARCHAR(10)` | NULL | 로그인 참여자와 비로그인 참여자의 여행방 닉네임. NULL이면 탈퇴한 회원 |
 | `trip_member.role` | `trip_member_role` | NOT NULL | 여행별 역할. `ADMIN`(여행 생성자이자 관리자)과 `MEMBER` |
-| `trip_member.trip_member_status` | enum | 정하지 않음 | 참여자 상태. `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) |
+| `trip_member.status` | `trip_member_status` | NOT NULL | 참여자 상태. `MEMBER`(로그인 참여자), `GUEST`(비로그인 참여자), `LEFT`(나간 회원), `WITHDRAWN`(탈퇴 회원) |
 | `trip_member.left_at` | `TIMESTAMPTZ` | NULL | 여행을 나간 시각. NULL이면 나간 적이 없음 |
 
 - `trip`에는 `CHECK ((country_code = 'ETC') = (custom_country_name IS NOT NULL))` 제약을 둔다.
@@ -51,7 +51,7 @@ sequenceDiagram
         Server-->>App: 성공 응답
     else 변경 조건 미충족
         Server->>DB: ROLLBACK
-        Server-->>App: 오류 응답
+        Server-->>App: 오류 응답 또는 확정 전 상태
     end
 ```
 
@@ -59,6 +59,7 @@ sequenceDiagram
 - 로그인 참여자가 참여하거나 관리자가 비로그인 참여자를 등록하면 서버는 `trip_member` 행을 만든다.
 - 서버는 빈자리 행을 미리 만들지 않는다. 빈자리 수는 `trip.member_capacity`에서 등록된 참여자 수를 뺀 값이다([총인원과 빈자리](../policy/trip.md#총인원과-빈자리)).
 - 총인원을 바꾸면 서버는 `trip_member` 행을 만들거나 지우지 않는다.
+- 빈자리가 남아 여행 확정 조건을 충족하지 못하면 서버는 여행을 바꾸지 않고 `200 OK`와 `UNCONFIRMED`를 반환한다([TRIP-11 여행 확정](../api-spec/trip.md#trip-11-여행-확정)).
 - 회원이 여행에 참여하면 서버는 `member_id`가 있는지 보고 참여자 상태를 정한다.
 - 회원이 여행을 나가면 서버는 행을 지우지 않고 참여자 상태를 `LEFT`로 바꾼다.
 - 회원이 여행을 나가면 서버는 `left_at`에 나간 시각을 기록한다.
@@ -98,7 +99,8 @@ sequenceDiagram
 - 잠금 대기가 `lock_timeout`을 넘으면 서버는 재시도하지 않고 오류를 반환한다. 응답은 [TRIP-11 여행 확정](../api-spec/trip.md#trip-11-여행-확정)을 따른다.
 - 같은 여행에 이미 있는 여행방 닉네임으로 등록하거나 수정하면 서버는 요청을 거절한다.
 - 같은 회원이 같은 여행에 다시 참여하면 서버는 `UNIQUE (trip_id, member_id)` 제약으로 두 번째 행을 저장하지 않는다.
-- 등록된 참여자 수가 총인원과 같으면 서버는 참여와 비로그인 참여자 등록을 거절한다.
+- 등록된 참여자 수가 총인원과 같으면 서버는 신규 참여와 비로그인 참여자 등록을 거절한다.
+- 이미 참여 중인 회원이 다시 참여를 요청하면 서버는 정원과 관계없이 기존 참여 정보를 반환한다([TRIP-07 여행 참여](../api-spec/trip.md#trip-07-여행-참여)).
 
 ## 여행 생성 멱등성
 
