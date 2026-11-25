@@ -7,4 +7,4 @@
 | 지출 | [expense.md](expense.md) | 저장, 수정 잠금, 삭제와 OCR |
 | 환율 | [exchange-rate.md](exchange-rate.md) | 개인 기록, 외부 환율과 기본값 |
 | 정산 | [settlement.md](settlement.md) | 준비, 미리보기, 발행과 수령 확인 |
-| 설정 | [settings.md](settings.md) | 알림의 조건부 후보와 앱 내 공지 |
+| 설정 | [settings.md](settings.md) | 앱 내 공지 |

@@ -1,4 +1,4 @@
-# 지출 API 스펙 초안 (1차 MVP)
+# 지출 API 스펙 (1차 MVP)
 
 ## 목차
 
@@ -16,7 +16,6 @@
   - [EXP-08 지출 삭제](#exp-08-지출-삭제)
 - [영수증 인식 API](#영수증-인식-api)
   - [EXP-09 영수증 인식](#exp-09-영수증-인식)
-- [계산 미리보기 API 후보](#계산-미리보기-api-후보)
 - [공통 모델](#공통-모델)
   - [ExpenseSummary](#expensesummary)
   - [ExpenseDetail](#expensedetail)
@@ -36,9 +35,7 @@
 
 [목록](README.md) | [공통 API 스펙](common.md) | [정책](../policy/expense.md) | [설계](../design/expense.md)
 
-이 문서는 API 스펙 검토용 초안이다.
 API 식별자는 화면 정의서 식별자와 별개다.
-경로, 요청과 응답 필드, 오류 코드를 팀에서 확정하지 않은 API는 Method와 Path 아래에 `논의 필요`로 표시한다.
 
 ## API 목록
 
@@ -54,26 +51,18 @@ API 식별자는 화면 정의서 식별자와 별개다.
 | [지출 삭제](#exp-08-지출-삭제) | `DELETE` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자 |
 | [영수증 인식](#exp-09-영수증-인식) | `POST` | `/api/v1/trips/{tripId}/receipt-recognitions` | 여행 참여자 (여행 확정 후) |
 
-전체 할인액은 개인별 결제 부담 비율로 분배하며 1차 MVP에서는 계산된 개인 부담액의 수기 수정을 제공하지 않는다. 할인액의 반올림과 잔여 금액 처리 기준은 미정이다. 직접 수정한 환율의 자동 저장은 [환율 정책](../policy/exchange-rate.md#지출-환율)을 따른다.
+전체 할인액은 개인별 결제 부담 비율로 분배하며 1차 MVP에서는 계산된 개인 부담액의 수기 수정을 제공하지 않는다. 직접 수정한 환율의 자동 저장은 [환율 정책](../policy/exchange-rate.md#지출-환율)을 따른다.
 
 탈퇴자의 결제 목록은 표시 이름과 금액만 제공하고 상세 품목과 개인 리시트는 노출하지 않는다. 구체적인 응답 축약 모델은 추가 설계가 필요하다.
 
 1차 MVP에서는 입력 중인 지출을 앱이 기기에만 저장하므로 임시 저장 API를 두지 않는다([입력과 저장](../policy/expense.md#입력과-저장)).
 지출 생성 API는 입력을 마친 지출만 저장하며 불완전한 입력의 임시 저장에 쓰지 않는다.
 
-> 추후 반영
->
-> 다른 기기에서도 이어 쓰는 서버 임시 저장의 API와 복원 계약은 정책에 반영할 때 설계한다.
-
 ## 지출 조회와 저장 API
 
 ### EXP-01 지출 목록
 
 `GET /api/v1/trips/{tripId}/expenses`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -97,8 +86,8 @@ API 식별자는 화면 정의서 식별자와 별개다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `fromDate` | String | 선택 | 없음 | YYYY-MM-DD. 현지 결제 날짜 기준. 경계 날짜 포함 여부는 논의 필요. |
-| `toDate` | String | 선택 | 없음 | YYYY-MM-DD. 현지 결제 날짜 기준. 경계 날짜 포함 여부는 논의 필요. |
+| `fromDate` | String | 선택 | 없음 | YYYY-MM-DD. 현지 결제 날짜 기준. |
+| `toDate` | String | 선택 | 없음 | YYYY-MM-DD. 현지 결제 날짜 기준. |
 | `page` | Integer | 선택 | 0 | 0 이상. 다음 페이지는 현재 page+1. |
 | `size` | Integer | 선택 | 20 | 1~100, 범위 밖이면 400. |
 
@@ -116,7 +105,6 @@ HTTP `200 OK`를 반환한다.
 | `data` | Array&lt;[ExpenseSummary](#expensesummary)&gt; | 아니요 | 항상 | 이 API의 처리 결과. |
 
 응답 최상위 `page`는 [Page](common.md#page)를 따른다.
-페이지 적용 자체와 개별 기본 정렬은 검토 대상이다.
 
 ```json
 {
@@ -156,19 +144,9 @@ HTTP `200 OK`를 반환한다.
 
 서버는 여행 기간 밖의 지출도 반환한다.
 
-> 논의 필요
->
-> - 기간 필터의 경계
-> - 정산 대상 선택에 이 API를 다시 쓸 때 선택 가능 여부와 선택 불가 사유의 응답 필드와 포함 조건. 후보는 [Candidate](settlement.md#candidate)를 참고한다.
-> - 기본 정렬 기준과 동률 순서
-
 ### EXP-02 지출 상세
 
 `GET /api/v1/trips/{tripId}/expenses/{expenseId}`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -256,20 +234,9 @@ HTTP `200 OK`를 반환한다.
 회원은 발행된 정산에 포함된 지출도 조회할 수 있다.
 탈퇴자의 품목과 금액은 [공동 기록과 미완료 정산](../policy/user.md#공동-기록과-미완료-정산)에 따라 표시한다.
 
-> 논의 필요
->
-> - 품목 ID와 표시 순서
-> - 탈퇴자의 품목을 숨기고 정산에 필요한 금액만 보여 주는 범위
-> - 지출명 길이: [지출 설계서](../design/expense.md#저장-데이터)의 논의 필요를 따른다.
-> - 환율 제공 기관과 기준일의 `null` 규칙
-
 ### EXP-03 지출 생성
 
 `POST /api/v1/trips/{tripId}/expenses`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -291,11 +258,7 @@ HTTP `200 OK`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `Idempotency-Key` | String | 필수 | 없음 | 같은 저장 재시도에는 같은 키를 유지. 이름과 범위는 검토 제안이다. |
-
-> 논의 필요
->
-> 전달 위치와 헤더 이름을 확정해야 한다.
+| `Idempotency-Key` | String | 필수 | 없음 | 같은 저장 재시도에는 같은 키를 유지. |
 
 ##### Body
 
@@ -374,10 +337,6 @@ HTTP `201 Created`를 반환한다.
 
 생성한 대상의 조회 URL을 `Location`에 제공한다.
 
-> 논의 필요
->
-> 조회 경로를 아직 정의하지 않은 자원은 그 경로를 함께 확정해야 한다.
-
 #### 오류
 
 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
@@ -399,24 +358,11 @@ HTTP `201 Created`를 반환한다.
 서버는 금액 합계를 검증한 뒤 지출, 품목과 부담액을 한 번에 저장한다.
 하나라도 저장에 실패하면 서버는 아무것도 저장하지 않고, 저장 고유키도 성공으로 기록하지 않는다.
 
-> 논의 필요
->
-> - 저장 요청에 계산 결과를 넣을지 여부
-> - 계산 위치, 전체 할인 배분, 품목 합계 검증, 자투리 금액 배정과 환산 순서: [분배와 할인](../policy/expense.md#분배와-할인)과 [환산과 자투리](../policy/expense.md#환산과-자투리)의 논의 필요를 따른다.
-> - 요청 예시. 지금 예시는 서버 계산을 가정한 전체 1/N(`EQUAL`) 방식의 안이며 최종 스펙이 아니다.
-> - 저장 고유키를 보낼 위치, 중복으로 판단할 범위와 보존 기간
-> - 처리 중인 중복 요청, 같은 키로 내용이 다른 요청, 이미 성공한 요청을 다시 보냈을 때의 응답과 삭제 후 재시도
-> - 금액 상한. 통화 최소 단위는 [환산과 자투리 정책](../policy/expense.md#환산과-자투리)을, 지출명 길이와 환율 출처 컬럼은 [지출 설계서](../design/expense.md#저장-데이터)의 논의 필요를 따른다.
-
 ## 수정 잠금과 변경 API
 
 ### EXP-04 수정 잠금 획득
 
 `POST /api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -459,10 +405,6 @@ HTTP `201 Created`를 반환한다.
 
 생성한 대상의 조회 URL을 `Location`에 제공한다.
 
-> 논의 필요
->
-> 조회 경로를 아직 정의하지 않은 자원은 그 경로를 함께 확정해야 한다.
-
 #### 오류
 
 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
@@ -482,18 +424,9 @@ HTTP `201 Created`를 반환한다.
 같은 회원이 다시 요청해도 서버는 현재 유효한 수정 잠금을 새 토큰으로 바꾸지 않는다.
 잠금의 유지 시간은 [수정과 잠금 정책](../policy/expense.md#수정과-잠금)을 따른다.
 
-> 논의 필요
->
-> - 잠금 토큰의 발급 방법과 형식: [지출 수정 잠금 설계](../design/expense.md#지출-수정-잠금)의 논의 필요를 따른다.
-> - 잠금 획득 응답을 받지 못했을 때 같은 수정 작업을 다시 확인하는 방법
-
 ### EXP-05 수정 잠금 연장
 
 `PATCH /api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -516,11 +449,7 @@ HTTP `201 Created`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. 헤더 이름과 전달 위치는 제안이다. |
-
-> 논의 필요
->
-> 잠금 토큰의 전달 위치와 헤더 이름: [지출 수정 잠금 설계](../design/expense.md#지출-수정-잠금)의 논의 필요를 따른다.
+| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. |
 
 요청 Body는 보내지 않는다.
 
@@ -561,17 +490,9 @@ HTTP `200 OK`를 반환한다.
 만료된 잠금의 연장을 요청하면 서버는 요청을 거절한다.
 유효한 연장 요청이면 서버는 기존 만료 시각에 2분을 더한다.
 
-> 논의 필요
->
-> 연장 상한과 만료 경계, 토큰 헤더 이름과 전달 위치: [수정과 잠금 정책](../policy/expense.md#수정과-잠금)과 [지출 수정 잠금 설계](../design/expense.md#지출-수정-잠금)의 논의 필요를 따른다.
-
 ### EXP-06 수정 잠금 해제
 
 `DELETE /api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -594,11 +515,7 @@ HTTP `200 OK`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. 헤더 이름과 전달 위치는 제안이다. |
-
-> 논의 필요
->
-> 잠금 토큰의 전달 위치와 헤더 이름: [지출 수정 잠금 설계](../design/expense.md#지출-수정-잠금)의 논의 필요를 따른다.
+| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. |
 
 요청 Body는 보내지 않는다.
 
@@ -623,18 +540,9 @@ HTTP `204 No Content`를 반환한다.
 
 토큰이 다른 새 작업의 잠금이면 서버는 잠금을 해제하지 않는다.
 
-> 논의 필요
->
-> 토큰 전달 방식, 이미 해제되었거나 만료된 잠금의 해제 요청에 성공으로 응답함 vs 충돌로 응답함
-
 ### EXP-07 지출 수정
 
 `PUT /api/v1/trips/{tripId}/expenses/{expenseId}`
-
-> 논의 필요
->
-> - 전체 입력값을 교체하는 PUT 메서드는 확정했다.
-> - 최종 경로와 요청, 응답 필드의 확정 여부
 
 #### 인증
 
@@ -657,21 +565,13 @@ HTTP `204 No Content`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. 헤더 이름과 전달 위치는 제안이다. |
-
-> 논의 필요
->
-> 잠금 토큰의 전달 위치와 헤더 이름: [지출 수정 잠금 설계](../design/expense.md#지출-수정-잠금)의 논의 필요를 따른다.
+| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. |
 
 ##### Body
 
 Content-Type: `application/json`
 
 요청 필드: [ExpenseInput](#expenseinput).
-
-> 논의 필요
->
-> 다음 요청 모델과 예시의 확정 여부
 
 ```json
 {
@@ -742,10 +642,6 @@ HTTP `200 OK`를 반환한다.
 }
 ```
 
-> 논의 필요
->
-> 성공 응답 상태의 확정 여부
-
 #### 오류
 
 공통 오류 형식은 [공통 오류 응답](common.md#오류-응답)을 따른다.
@@ -760,29 +656,15 @@ HTTP `200 OK`를 반환한다.
 | 409 | `EXPENSE_SETTLEMENT_LOCKED` | 지출이 정산 대상으로 잠겨 있음 |
 | 400 | `EXPENSE_AMOUNT_MISMATCH` | 수정 결과의 금액 합계가 검증 기준과 맞지 않음 |
 
-> 논의 필요
->
-> 오류 매핑의 확정 여부
-
 #### 처리 규칙
 
 서버는 수정 잠금이 만료되지 않았고 지출이 정산 대상으로 잠기지 않았는지 다시 확인한다.
 서버는 지출, 품목과 부담액의 변경과 잠금 해제를 한 번에 반영하며, 하나라도 실패하면 모두 취소한다.
 저장에 실패하면 서버는 기존 지출과 수정 잠금을 유지한다.
 
-> 논의 필요
->
-> - 계산 주체와 세부 계산 규칙: [환산과 자투리 정책](../policy/expense.md#환산과-자투리)의 논의 필요를 따른다.
-> - 잠금 토큰의 전달 방법: [지출 수정 잠금 설계](../design/expense.md#지출-수정-잠금)의 논의 필요를 따른다.
-> - 수정 저장 응답을 받지 못했을 때의 재요청 처리
-
 ### EXP-08 지출 삭제
 
 `DELETE /api/v1/trips/{tripId}/expenses/{expenseId}`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -825,20 +707,11 @@ HTTP `204 No Content`를 반환한다.
 
 수정이나 정산으로 잠긴 지출이면 서버는 삭제하지 않는다.
 
-> 논의 필요
->
-> - 본인이 수정 잠금을 가진 상태에서 삭제할 수 있는지 여부
-> - 이미 삭제한 지출을 다시 삭제하거나 조회했을 때의 응답
-
 ## 영수증 인식 API
 
 ### EXP-09 영수증 인식
 
 `POST /api/v1/trips/{tripId}/receipt-recognitions`
-
-> 논의 필요
->
-> 경로, 요청, 응답과 오류 코드의 확정 여부
 
 #### 인증
 
@@ -862,10 +735,10 @@ Content-Type: `multipart/form-data`
 
 | Part | Content-Type | 필수 | 규칙 |
 | --- | --- | --- | --- |
-| `image` | `image/*` | 필수 | 이미지 1개. 형식과 용량 상한은 논의 필요. |
-| `request` | `application/json` | 필수 | splitType: EQUAL 또는 BY_ITEM을 전달하는 검토안. |
+| `image` | `image/*` | 필수 | 이미지 1개. |
+| `request` | `application/json` | 필수 | 분배 방식(`splitType`)을 전달한다. |
 
-JSON Part `request`의 필드 후보:
+JSON Part `request`의 필드:
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
@@ -917,10 +790,6 @@ JSON Part `request`의 필드 후보:
 
 영수증이 아닌 이미지를 인식 실패와 구분해 응답할지는 [영수증 인식 정책](../policy/expense.md#이미지-처리와-결제-정보)의 결정을 따른다.
 
-> 논의 필요
->
-> 구분하기로 하면 오류 코드로 알릴지, 인식 결과에 표시할지 정한다.
-
 #### 처리 규칙
 
 서버는 인식만으로 지출을 저장하지 않는다.
@@ -954,28 +823,7 @@ JSON Part `request`의 필드 후보:
 }
 ```
 
-> 논의 필요
->
-> 외부 인식 호출과 전체 요청의 타임아웃 기준, 시간 초과의 오류 응답과 앱의 재시도 처리
-
-## 계산 미리보기 API 후보
-
-서버에서 부담액을 계산하기로 정하면 `POST /api/v1/trips/{tripId}/expense-previews`를 둔다.
-이 API의 입력 필드는 [ExpenseInput](#expenseinput)을 바탕으로 정한다.
-계산 결과를 확인하는 것만으로 서버는 지출을 저장하지 않는다.
-이 API는 POC 뒤에 도입 여부를 정하므로 API 목록에 넣지 않는다.
-계산 기준은 [지출 저장 설계](../design/expense.md#지출-저장)를 따른다.
-
-> 논의 필요
->
-> - 계산 결과를 고정하는 방식. 도입 여부는 [환산과 자투리 정책](../policy/expense.md#환산과-자투리)의 계산 위치 결정을 따른다.
-> - 저장 요청에 최종 부담액을 넣을지 여부와 서버가 다시 검증할 항목
-
 ## 공통 모델
-
-> 논의 필요
->
-> 모델 이름과 필드 구성의 확정 여부
 
 요청 모델은 필수 여부와 기본값을, 응답 모델은 nullable과 포함 조건을 구분한다. 조건부 요청 필드는 예시에 사용한 조건을 만족할 때만 포함한다. 배열 원소는 링크한 모델을 따른다.
 
@@ -1012,10 +860,10 @@ JSON Part `request`의 필드 후보:
 | `discountAmount` | String | 아니요 | 항상 | 전체 할인액. 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeRate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeRateSource` | String | 아니요 | 항상 | `AUTO`, `MANUAL` 중 하나. AUTO는 API에서 가져온 환율, MANUAL은 개인 기록 또는 직접 입력한 환율이다. 제공 기관은 exchangeRateProvider로 구분한다. |
-| `exchangeRateProvider` | String | 예 | 항상 | API 제공 기관. 수동 값의 null 규칙과 명칭은 논의 필요. |
-| `exchangeRateBaseDate` | String | 예 | 항상 | YYYY-MM-DD. 실제 기준일. 직접 입력했을 때의 값은 논의 필요. |
+| `exchangeRateProvider` | String | 예 | 항상 | API 제공 기관. |
+| `exchangeRateBaseDate` | String | 예 | 항상 | YYYY-MM-DD. 실제 기준일. |
 | `amountKrw` | String | 아니요 | 항상 | 원화 환산 결제액. 소수점 이하 2자리 문자열로 전달한다. |
-| `items` | Array&lt;[ExpenseItem](#expenseitem)&gt; | 아니요 | 항상 | 품목별 저장 내역. EQUAL이면 빈 배열. 탈퇴자 마스킹은 논의 필요. |
+| `items` | Array&lt;[ExpenseItem](#expenseitem)&gt; | 아니요 | 항상 | 품목별 저장 내역. EQUAL이면 빈 배열. |
 | `shares` | Array&lt;[Share](#share)&gt; | 아니요 | 항상 | 참여자별 최종 부담액. |
 
 ### ExpenseItem
@@ -1026,7 +874,7 @@ JSON Part `request`의 필드 후보:
 | `name` | String | 예 | 항상 | 품목명. 미입력이면 null. |
 | `amount` | String | 아니요 | 항상 | 상품 할인 전 품목 금액. 소수점 이하 2자리 문자열로 전달한다. |
 | `discountAmount` | String | 아니요 | 항상 | 그 품목 할인액. 소수점 이하 2자리 문자열로 전달한다. |
-| `sortOrder` | Integer | 아니요 | 항상 | 표시 순서. 시작값과 중복 처리 기준은 논의 필요. |
+| `sortOrder` | Integer | 아니요 | 항상 | 표시 순서. |
 | `tripMemberIds` | Array&lt;String&gt; | 아니요 | 항상 | 품목 부담자의 여행 참여 ID. |
 
 ### Share
@@ -1041,7 +889,7 @@ JSON Part `request`의 필드 후보:
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `name` | String | 필수 | 없음 | 필수 지출명. 정책의 입력 무제한과 [DB 컬럼](../design/expense.md#저장-데이터)의 길이 제한 충돌은 논의 필요. |
+| `name` | String | 필수 | 없음 | 필수 지출명. |
 | `splitType` | String | 필수 | 없음 | `EQUAL`은 전체 1/N, `BY_ITEM`은 품목별 분배다. |
 | `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 | `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
@@ -1049,7 +897,7 @@ JSON Part `request`의 필드 후보:
 | `payerTripMemberId` | String | 필수 | 없음 | 실제 결제자의 여행 참여자 ID. 같은 여행의 회원 참여자만 지정할 수 있다. |
 | `originalAmount` | String | 필수 | 없음 | 할인 전 총액. 소수점 이하 2자리 문자열로 전달한다. |
 | `discountAmount` | String | 선택 | "0.00" | 소수점 이하 2자리 전체 할인액. 0 이상. |
-| `exchangeRate` | String | 필수 | 없음 | 외화 1단위당 KRW, 소수점 이하 2자리, 0보다 큼. KRW의 처리는 논의 필요. |
+| `exchangeRate` | String | 필수 | 없음 | 외화 1단위당 KRW, 소수점 이하 2자리, 0보다 큼. |
 | `exchangeRateSource` | String | 필수 | 없음 | `AUTO`, `MANUAL` 중 하나. |
 | `tripMemberIds` | Array&lt;String&gt; | 조건부 | 없음 | splitType=EQUAL이면 필수이며 1명 이상. BY_ITEM이면 전달하지 않는다. |
 | `items` | Array&lt;[ExpenseItemInput](#expenseiteminput)&gt; | 조건부 | 없음 | splitType=BY_ITEM이면 필수. EQUAL이면 전달하지 않는다. |
@@ -1058,7 +906,7 @@ JSON Part `request`의 필드 후보:
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `name` | String | 선택 | 없음 | 품목명. 생략 시 이름 없는 품목으로 처리하는 안이며 null 허용과 최대 길이는 논의 필요. |
+| `name` | String | 선택 | 없음 | 품목명. 생략하면 이름 없는 품목으로 처리한다. |
 | `amount` | String | 필수 | 없음 | 품목 할인 전 금액. 소수점 이하 2자리 문자열로 전달한다. |
 | `discountAmount` | String | 필수 | 없음 | 품목 할인액. 전체 할인과 구분. 소수점 이하 2자리 문자열로 전달한다. |
 | `tripMemberIds` | Array&lt;String&gt; | 필수 | 없음 | 같은 여행의 유효 부담자, 1명 이상. |
@@ -1097,10 +945,6 @@ JSON Part `request`의 필드 후보:
 
 ## 오류 코드
 
-> 논의 필요
->
-> 도메인 오류 코드의 이름, HTTP 대응과 안내 문구의 확정 여부
-
 공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
 
 | HTTP | 코드 | 조건 |
@@ -1118,7 +962,3 @@ JSON Part `request`의 필드 후보:
 | 503 | `EXPENSE_RECOGNITION_UNAVAILABLE` | 외부 인식 기능을 일시적으로 사용할 수 없음 |
 | 409 | `EXPENSE_SETTLEMENT_LOCKED` | 지출이 준비 중이거나 발행된 정산에 포함돼 있음 |
 | 409 | `EXPENSE_TRIP_NOT_CONFIRMED` | 여행 확정 전에 지출을 등록하려 함 |
-
-> 논의 필요
->
-> 개별 API의 오류 조건과 도메인 코드 이름은 팀 검토 후 확정한다.
