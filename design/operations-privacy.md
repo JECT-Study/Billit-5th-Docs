@@ -17,7 +17,7 @@
 | 서버 로그 | 개발과 모니터링 서버의 Loki |
 | 로그인 기록 | 운영 데이터 서버의 PostgreSQL |
 | 서버 지표(CPU, 메모리) | 개발과 모니터링 서버의 Prometheus, 14일 보관 |
-| 취급자 접속 기록 | OCI Object Storage 비공개 버킷, 1년 보관 |
+| 취급자 접속 기록 | OCI Object Storage 비공개 버킷 |
 
 운영 데이터 서버는 공인 IP가 없는 사설 서브넷에 있다. PostgreSQL(5432)과 Redis(6379)는 운영 앱 서버에서 오는 연결만 허용한다.
 
