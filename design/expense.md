@@ -27,7 +27,7 @@
 | `expense.created_by_trip_member_id` | `BIGINT` | NOT NULL, FK `trip_member.id` | 기록자 |
 | `expense.exchange_rate` | `DECIMAL(24,12)` | NOT NULL | 적용 환율. 결제 통화 1단위의 원화 금액 |
 | `expense.exchange_rate_source` | `rate_source` | NOT NULL | 환율 결정 방식. `AUTO`(API 환율)와 `MANUAL`(직접 입력) |
-| `expense.krw_amount` | `BIGINT` | NOT NULL | 최종 결제액의 원화 환산액 |
+| `expense.krw_amount` | `BIGINT` | NOT NULL | 최종 결제액의 원화 환산액. 1원 단위 |
 | `expense.settlement_id` | `BIGINT` | NULL, FK `settlement.id` | 지출을 점유한 정산. NULL이면 점유한 정산이 없음 |
 | `expense.deleted_at` | `TIMESTAMPTZ` | NULL | 삭제 시각. NULL이면 삭제하지 않은 지출 |
 | `expense_item.expense_id` | `BIGINT` | NOT NULL, FK `expense.id` | 품목이 속한 지출 |
@@ -42,9 +42,11 @@
 | `expense_share_amount.trip_id` | `BIGINT` | NOT NULL, FK `trip.id` | 부담액의 여행 |
 | `expense_share_amount.trip_member_id` | `BIGINT` | NOT NULL, FK `trip_member.id` | 부담자 |
 | `expense_share_amount.amount` | `BIGINT` | NOT NULL | 결제 통화의 최종 부담액 |
-| `expense_share_amount.krw_amount` | `BIGINT` | NOT NULL | 원화로 환산한 최종 부담액 |
+| `expense_share_amount.krw_amount` | `BIGINT` | NOT NULL | 원화로 환산한 최종 부담액. 1원 단위 |
 
-- 금액 컬럼의 `BIGINT`는 통화의 최소 단위 정수다. USD 12.34는 1234로 저장한다.
+- 결제 통화 금액 컬럼의 `BIGINT`는 [결제 통화의 최소 단위](../policy/expense.md#환산과-자투리)의 정수다. KRW 12000은 12000, USD 12.34는 1234로 저장한다.
+- `krw_amount` 컬럼의 `BIGINT`는 1원 단위의 정수다.
+- 서버는 품목의 `sort_order`를 요청한 품목 순서대로 0부터 매긴다.
 - `expense_item_member`는 `(expense_item_id, trip_member_id)` 조합을 한 행만 둔다.
 - `expense_share_amount`는 `(expense_id, trip_member_id)` 조합을 한 행만 둔다.
 - 전체 1/N 지출이면 서버는 `expense_item` 행 없이 선택한 참여자별 부담액을 `expense_share_amount`에 저장한다.
@@ -66,8 +68,8 @@ sequenceDiagram
     participant DB as DB
 
     App->>Server: POST /api/v1/trips/{tripId}/expenses
-    Server->>Server: 참여, 여행 시작 여부와 소속 검증
-    Server->>Server: 필수값, 최종 결제액과 부담액 합계 검증
+    Server->>Server: 참여, 여행 확정 여부와 소속 검증
+    Server->>Server: 금액 검증과 부담액 계산
     Server->>DB: BEGIN
     Server->>DB: 지출, 품목, 부담자 연결과 최종 부담액 저장
     alt 모든 저장 성공
@@ -80,18 +82,21 @@ sequenceDiagram
 ```
 
 - 부담액 계산 결과를 확인하는 단계에서 서버는 지출을 저장하지 않는다.
-- 서버는 요청자의 여행 참여, 여행 시작 여부, 결제자와 부담자의 같은 여행 소속을 검증한다.
+- 서버는 요청자의 여행 참여, 여행 확정 여부, 결제자와 부담자의 같은 여행 소속을 복합 FK 없이 서버에서 검증한다.
+- 서버는 저장 요청에 계산 결과를 받지 않고 최종 결제액, 참여자별 부담액과 원화 환산액을 직접 계산한다. 근거: [JECT-Study/Billit-5th-Server#77](https://github.com/JECT-Study/Billit-5th-Server/pull/77)
 - 서버는 같은 저장 요청의 중복 반영을 [지출 생성 멱등성](#지출-생성-멱등성)으로 막는다.
 - 지출을 수정하면 서버는 생성과 같은 계산 기준을 적용한다.
 - 지출 수정 API는 `PUT`으로 수정할 수 있는 입력값 전체를 받는다.
 
-부담액의 계산 순서는 아래와 같다.
+서버는 부담액을 계산할 때 이 순서를 따른다.
 
-1. 입력값과 부담 참여자를 검증한다.
-2. 적용 환율을 확인한다.
-3. 총액이나 품목별 할인을 반영한다.
-4. 선택한 참여자에게 분배하고 자투리를 배정한다.
-5. 원화로 환산하고 합계를 검증한다.
+1. 금액과 환율의 범위, 부담 참여자를 검증한다.
+2. 금액을 결제 통화의 최소 단위 정수로 바꾼다.
+3. 최종 결제액을 구한다.
+4. 참여자별 부담 비율을 구한다.
+5. 최종 결제액을 부담 비율대로 나누고 자투리를 배정한다.
+6. 최종 결제액을 원화로 환산한다.
+7. 원화 환산액을 결제 통화 부담액의 비율대로 나누고 자투리를 배정한다.
 
 다음 표는 분배 방식별 최종 결제액이다.
 
@@ -101,8 +106,10 @@ sequenceDiagram
 | 품목별 | `original_amount - SUM(품목 discount_amount) - expense.discount_amount` |
 
 - 상품 할인은 `expense_item.discount_amount`에만 저장하고, 최종 결제액에서 한 번만 뺀다.
-- 전체 할인은 상품 할인을 반영한 참여자별 부담액에 비례해 나눈다.
-- 자투리는 소수점 이하 값이 큰 참여자부터 배정한다.
+- 부담 비율의 정의는 [분배와 할인](../policy/expense.md#분배와-할인)을, 자투리의 배정 순서와 원화 반올림은 [환산과 자투리](../policy/expense.md#환산과-자투리)를 따른다.
+- 서버는 품목마다 부담자 수의 최소공배수를 곱해 부담 비율을 정수로 구하므로, 비율을 구하는 단계에서 반올림하지 않는다.
+- 서버는 금액에 부담 비율을 곱해 비율의 합으로 나눈 몫을 먼저 배정하고, 남은 최소 단위를 나머지가 큰 참여자부터 1씩 더한다.
+- 서버는 원화 환산액의 반올림에 `HALF_UP`을 쓴다.
 
 다음은 저장 결과를 보여 주는 가상 예시다.
 
@@ -116,8 +123,11 @@ sequenceDiagram
 3. 2번 지출에 전체 할인 1,000원이 더 있다.
    결과: 민지의 할인액은 700원, 지훈은 300원이다. 최종 부담액은 민지 6,300원, 지훈 2,700원이고 합계는 최종 결제액 9,000원이다.
 
-4. 10,000원을 세 명에게 원 단위로 나눈다.
-   결과: 3,333원씩 배정하면 1원이 남는다. 세 참여자의 소수점 이하 값이 같으므로, 남은 1원의 배정 대상은 동률 기준을 정해야 결정된다.
+4. 민지(`trip_member_id = 3`), 지훈(`5`), 서연(`9`)이 10,000원을 전체 1/N으로 나눈다.
+   결과: 3,333원씩 배정하면 1원이 남는다. 세 참여자의 나머지가 같으므로 `trip_member_id`가 가장 작은 민지가 1원을 더 받는다. 부담액은 민지 3,334원, 지훈 3,333원, 서연 3,333원이다.
+
+5. 4번의 세 사람이 USD 10.00을 환율 1,380.55로 전체 1/N으로 나눈다.
+   결과: 결제 통화 부담액은 민지 3.34달러, 지훈 3.33달러, 서연 3.33달러다. 원화 환산액 13,805.5원을 반올림해 `krw_amount = 13806`이다. 13,806원을 334:333:333으로 나누면 몫은 4,611원, 4,597원, 4,597원이고 1원이 남는다. 나머지가 큰 지훈과 서연 중 `trip_member_id`가 작은 지훈이 1원을 받는다. 원화 부담액은 민지 4,611원, 지훈 4,598원, 서연 4,597원이다.
 ```
 
 ### 트랜잭션과 동시성
@@ -129,21 +139,34 @@ sequenceDiagram
 ### 실패 처리
 
 - 저장 중 하나라도 실패하면 서버는 같은 트랜잭션에서 저장한 지출, 품목, 부담자 연결과 부담액을 모두 롤백한다.
-- 참여자별 `amount`의 합계가 `expense.amount`와 다르면 서버는 저장을 거절한다.
+- 입력 금액이 [분배와 할인](../policy/expense.md#분배와-할인)이나 [환산과 자투리](../policy/expense.md#환산과-자투리)의 기준을 벗어나면 서버는 지출을 저장하지 않는다. 오류 응답은 [EXP-03 지출 생성](../api-spec/expense.md#exp-03-지출-생성)을 따른다.
 
 ### 검증
 
 - 할인과 자투리를 반영해도 참여자별 부담액의 합계는 최종 결제액과 같다.
 - 같은 입력으로 두 번 계산하면 서버는 같은 부담액을 저장한다.
+- 10,000원을 세 명이 전체 1/N으로 나누면 서버는 `trip_member_id`가 가장 작은 참여자에게 3,334원을 저장한다.
+- 외화 지출에서 참여자별 `krw_amount`의 합계는 `expense.krw_amount`와 같다.
 - 부담액 저장이 실패하면 서버는 같은 요청의 지출과 품목도 저장하지 않는다.
 
 ## 지출 생성 멱등성
 
-앱은 지출 저장 요청에 고유키를 함께 보내고, 서버는 같은 키의 재요청으로 지출을 다시 저장하지 않는다.
+앱은 지출 생성 요청의 `Idempotency-Key` 헤더에 UUID 형식의 고유키를 보내고, 서버는 같은 회원이 같은 여행에서 같은 키로 다시 보낸 요청에 처음 만든 지출을 반환한다.
+
+### 저장 데이터
+
+| 이름 | 타입 | 제약 | 뜻 |
+| --- | --- | --- | --- |
+| `expense.idempotency_key` | `UUID` | NOT NULL, UNIQUE `uq_expense_idempotency_key` | 앱이 만든 지출 생성 고유키 |
+
+- 서버는 고유키를 지출 생성에만 쓴다.
+- 서버는 키 하나로 지출 하나만 만든다.
+- 서버는 고유키를 만료 없이 지출과 함께 보관한다.
+- 서버는 키를 사용한 회원을 그 키로 만든 지출의 `created_by_trip_member_id`로 확인한다.
 
 ### 처리 흐름
 
-다음은 고유키가 있는 지출 저장 요청의 처리 순서다.
+다음은 지출 생성 요청의 고유키 처리 순서다.
 
 ```mermaid
 sequenceDiagram
@@ -153,18 +176,29 @@ sequenceDiagram
     participant DB as DB
 
     App->>Server: POST /api/v1/trips/{tripId}/expenses
-    Server->>Server: 인증과 권한 검증
-    Server->>DB: 고유키와 요청 소유자 확인
-    alt 처음 처리하는 요청
-        Server->>DB: 지출과 고유키 저장
-        Server-->>App: 201 저장 결과
-    else 이미 성공한 키
-        Server-->>App: 재요청 응답
+    Server->>Server: 인증과 본문 형식 검증
+    Server->>DB: 여행과 요청자의 참여 확인
+    Server->>DB: 고유키로 지출 조회
+    alt 기존 지출 없음
+        Server->>Server: 여행 확정, 결제자와 부담자, 금액 검증
+        Server->>DB: 지출, 종속 데이터와 고유키 저장
+        alt 저장 성공
+            Server-->>App: 201 Created
+        else 고유키 UNIQUE 위반
+            Server->>DB: 새 트랜잭션에서 고유키로 지출 조회
+            Server-->>App: 201 Created 또는 409 EXPENSE_IDEMPOTENCY_KEY_REUSED
+        end
+    else 기존 지출 있음
+        Server-->>App: 201 Created 또는 409 EXPENSE_IDEMPOTENCY_KEY_REUSED
     end
 ```
 
-- 같은 저장을 재시도하면 앱은 같은 고유키를 보낸다.
-- 서버는 지출 생성 요청에만 고유키를 받는다.
+- 앱은 저장 시도마다 새 키를 만든다.
+- 응답을 받지 못해 같은 저장을 다시 보낼 때만 앱은 같은 키를 쓴다.
+- 서버는 본문 형식 검증, 여행과 참여 확인을 고유키 조회보다 먼저 실행한다.
+- 서버는 여행 확정 여부, 결제자와 부담자, 금액의 검증을 고유키 조회 뒤에 실행한다.
+- 서버는 같은 키의 요청을 같은 저장 요청의 재시도로 보고 처음 요청의 본문과 비교하지 않는다. 근거: [JECT-Study/Billit-5th-Server#78](https://github.com/JECT-Study/Billit-5th-Server/pull/78)
+- 고유키로 찾은 지출을 같은 여행에서 같은 회원이 기록했고 삭제하지 않았으면 서버는 `201 Created`, `Location`과 그 지출의 현재 상세를 반환한다.
 - 서버는 잠금 토큰과 저장 요청의 고유키를 섞어 쓰지 않는다.
 
 다음은 커밋한 뒤 앱이 응답을 받지 못한 상황의 가상 예시다.
@@ -174,25 +208,36 @@ sequenceDiagram
    결과: 지출 501이 한 건 저장되어 있다.
 
 2. 앱이 같은 숙소비 저장을 `save-A`로 다시 보낸다.
-   결과: 서버는 새 지출을 만들지 않는다. 숙소비는 한 건만 남는다.
+   결과: 서버는 새 지출을 만들지 않고 지출 501의 현재 상세를 `201 Created`로 반환한다. 숙소비는 한 건만 남는다.
 ```
 
 ### 트랜잭션과 동시성
 
-- 서버는 처음 처리하는 요청의 지출과 고유키를 한 트랜잭션에서 저장한다.
+- 서버는 처음 처리하는 요청의 지출, 종속 데이터와 고유키를 한 트랜잭션에서 저장한다.
+- 서버는 지출 생성 처리 전체를 한 트랜잭션으로 묶지 않는다. PostgreSQL은 오류가 난 트랜잭션에서 조회를 실행할 수 없기 때문이다.
 - 서버는 고유키를 사전에 조회한 결과만으로 같은 키의 동시 요청을 막지 않는다.
-- 서버는 고유키 중복을 확인한 트랜잭션 안에서 기존 결과를 조회할 수 있다고 가정하지 않는다.
+- 고유키 중복으로 저장에 실패하면 서버는 그 트랜잭션을 롤백한다.
+- 롤백한 뒤 서버는 새 트랜잭션에서 고유키로 지출을 다시 조회한다.
+- 같은 키의 요청이 동시에 오면 서버는 지출을 하나만 만든다.
+- 같은 키의 동시 요청 중 늦게 처리한 요청에 서버는 재요청과 같은 응답을 보낸다.
 
 ### 실패 처리
 
+- 키가 없거나 UUID 형식이 아니면 서버는 `400`으로 거절한다.
+- 요청자가 여행에 참여 중이 아니면 서버는 같은 키의 재요청이어도 `403`으로 거절한다.
+- 다른 회원이나 다른 여행에서 사용한 키이면 서버는 기존 지출 정보를 반환하지 않고 `409 EXPENSE_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 그 키로 만든 지출이 삭제되었으면 서버는 `409 EXPENSE_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 다시 조회했을 때 지출 행이 없으면 서버는 `409 EXPENSE_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 위반한 제약이 `uq_expense_idempotency_key`일 때만 서버는 고유키 중복으로 판단한다.
 - 지출, 품목이나 부담액의 저장이 롤백되면 서버는 고유키를 성공한 요청으로 남기지 않는다.
-- 다른 제약을 위반하면 서버는 그 오류를 고유키 중복으로 판단하지 않는다.
 
 ### 검증
 
 - 같은 고유키의 요청이 동시에 오면 서버는 지출을 한 건만 저장한다.
 - 커밋한 뒤 응답을 받지 못한 요청을 같은 고유키로 다시 보내면 서버는 지출을 추가로 저장하지 않는다.
 - 전체 롤백된 요청을 같은 고유키로 다시 보내면 서버는 지출을 저장한다.
+- 다른 회원이 사용한 키로 요청하면 서버는 `409 EXPENSE_IDEMPOTENCY_KEY_REUSED`로 거절한다.
+- 같은 회원이 같은 키로 본문 값을 바꿔 요청하면 서버는 처음 만든 지출을 반환한다.
 
 ## 지출 수정 잠금
 
@@ -205,13 +250,14 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | `expense.edit_lock_owner_trip_member_id` | `BIGINT` | NULL, FK `trip_member.id` | 수정 잠금 소유자. NULL이면 수정 잠금이 없음 |
 | `expense.edit_lock_expires_at` | `TIMESTAMPTZ` | NULL | 수정 잠금 만료 시각. NULL이면 수정 잠금이 없음 |
+| `expense.edit_lock_token` | `UUID` | NULL | 수정 작업을 식별하는 잠금 토큰. NULL이면 수정 잠금이 없음 |
 
-- 서버는 수정 작업을 식별하는 토큰을 `expense`에 소유자, 만료 시각과 함께 저장한다.
 - 수정 잠금이 없으면 소유자, 만료 시각과 토큰은 모두 NULL이다.
 - 수정 잠금이 있으면 소유자, 만료 시각과 토큰은 모두 값이 있다.
 - 서버는 잠금을 해제하거나 교체할 때 소유자, 만료 시각과 토큰을 함께 바꾼다.
 - 서버는 수정을 시작할 때마다 토큰을 새로 발급한다.
 - 토큰은 인증과 권한 검증을 대체하지 않는다.
+- 서버는 잠금 칼럼만 바꾸는 획득, 연장과 해제에서 `updated_at`을 바꾸지 않는다. 근거: [JECT-Study/Billit-5th-Server#81](https://github.com/JECT-Study/Billit-5th-Server/pull/81)
 
 ### 처리 흐름
 
@@ -245,7 +291,8 @@ sequenceDiagram
 
 - 서버는 요청자가 지출의 기록자나 관리자인지 검증한다.
 - 서버는 `:now`와 `:expires_at`을 앱의 입력이 아니라 서버 시각으로 계산한다.
-- 획득할 때 `:expires_at`은 `:now`에 잠금의 유효 시간을 더한 값이고, 연장할 때는 기존 `edit_lock_expires_at`에 연장 단위를 더한 값이다.
+- 획득할 때 `:expires_at`은 `:now`에 잠금의 유효 시간을 더하고 초 단위로 내린 값이다.
+- 연장할 때 서버는 요청마다 기존 `edit_lock_expires_at`에 연장 단위 `:extension`을 더한다.
 - 같은 사용자라도 서버는 유효한 잠금을 새 획득 요청으로 덮어쓰지 않는다. 앱은 기존 토큰으로 연장한다.
 - 수정 화면을 나가면 앱은 `DELETE /api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock`으로 잠금을 해제한다.
 - 같은 사용자의 요청도 다른 작업일 수 있으므로, 서버는 잠금을 해제할 때 사용자 ID와 토큰을 함께 비교한다.
@@ -278,7 +325,7 @@ RETURNING id, edit_lock_token, edit_lock_expires_at;
 ```sql
 -- 수정 잠금 연장
 UPDATE expense
-SET edit_lock_expires_at = GREATEST(edit_lock_expires_at, :expires_at)
+SET edit_lock_expires_at = edit_lock_expires_at + :extension
 WHERE id = :expense_id
   AND trip_id = :trip_id
   AND deleted_at IS NULL
@@ -289,7 +336,7 @@ WHERE id = :expense_id
 RETURNING id, edit_lock_expires_at;
 ```
 
-`GREATEST`는 늦게 도착한 연장 요청이 이미 늘어난 만료 시각을 줄이지 않게 한다.
+서버는 연장 요청마다 기존 만료 시각에 연장 단위를 더하므로, 늦게 도착한 연장 요청도 만료 시각을 줄이지 않는다.
 
 서버는 수정할 수 있는 결제 정보 전체와 부담액을 아래 쿼리와 같은 조건으로 갱신한다.
 다음은 수정 저장 트랜잭션의 첫 단계에서 소유자, 토큰과 만료 조건을 다시 검사하며 지출명과 금액을 바꾸는 축약 쿼리다.
@@ -324,11 +371,13 @@ SET edit_lock_owner_trip_member_id = NULL,
     edit_lock_expires_at = NULL
 WHERE id = :expense_id
   AND trip_id = :trip_id
-  AND settlement_id IS NULL
   AND edit_lock_owner_trip_member_id = :requester_trip_member_id
   AND edit_lock_token = :token
 RETURNING id;
 ```
+
+해제 쿼리는 정산 점유를 조건에 넣지 않는다.
+토큰이 맞는 해제 요청을 정산 점유 때문에 거절하지 않기 위해서다. 근거: [JECT-Study/Billit-5th-Server#81](https://github.com/JECT-Study/Billit-5th-Server/pull/81)
 
 ### 트랜잭션과 동시성
 
@@ -341,14 +390,17 @@ RETURNING id;
 
 ### 실패 처리
 
-- 수정 잠금 획득의 갱신이 0건이면 서버는 수정 진입을 거절한다.
 - `settlement_id`가 만료된 준비 정산을 가리키면 서버는 [만료된 정산 준비 정리](settlement.md#만료된-정산-준비-정리)를 거친 뒤 수정 잠금 획득을 다시 시도한다.
-- 수정 잠금 연장의 갱신이 0건이면 서버는 기존 토큰의 수정 권한을 인정하지 않는다.
+- 수정 잠금 획득의 갱신이 0건이고 지출에 정산 점유가 남아 있으면 서버는 `409 EXPENSE_SETTLEMENT_LOCKED`로 거절한다.
+- 수정 잠금 획득의 갱신이 0건이고 그 사이 지출이 삭제되었으면 서버는 `404`로 거절한다.
+- 수정 잠금 획득의 갱신이 0건이고 다른 사유가 없으면 서버는 유효한 잠금이 있다고 보고 `409 EXPENSE_EDIT_LOCKED`로 거절한다.
+- 수정 잠금 연장의 갱신이 0건이면 서버는 기존 토큰의 수정 권한을 인정하지 않고 `409 EXPENSE_EDIT_LOCK_INVALID`로 거절한다.
 - 만료된 토큰으로 연장을 요청하면 서버는 잠금을 되살리지 않는다. 앱은 수정 잠금을 다시 획득해야 한다.
 - 수정 저장의 지출 갱신이 0건이면 서버는 트랜잭션을 롤백하고 저장을 거절한다.
-- 수정 잠금 해제의 갱신이 0건이면 서버는 수정 저장 트랜잭션을 롤백한다.
+- 수정 저장 트랜잭션에서 수정 잠금 해제의 갱신이 0건이면 서버는 그 트랜잭션을 롤백한다.
 - 수정 저장 중 종속 데이터 갱신이 실패하면 서버는 지출 갱신과 잠금 해제를 함께 롤백한다.
-- 이전 토큰으로 해제를 요청하면 서버는 새 작업의 소유자, 토큰과 만료 시각을 유지한다. 응답 표시는 [EXP-06 수정 잠금 해제](../api-spec/expense.md#exp-06-수정-잠금-해제)를 따른다.
+- 정상 이탈 요청에서 해제의 갱신이 0건이고 다른 토큰이나 다른 회원의 유효한 잠금이 있으면 서버는 그 잠금을 유지하고 `409 EXPENSE_EDIT_LOCK_INVALID`로 거절한다.
+- 정상 이탈 요청에서 해제의 갱신이 0건이고 유효한 잠금이 없으면 서버는 같은 요청의 재시도로 보고 `204`로 응답한다.
 
 다음은 이전 토큰의 해제 요청이 늦게 도착한 가상 예시다.
 
@@ -360,18 +412,22 @@ RETURNING id;
    결과: 소유자 민지, 토큰 `edit-B`가 저장된다.
 
 3. 첫 화면에서 보낸 `edit-A`의 해제 요청이 늦게 도착한다.
-   결과: 토큰이 달라 0건 갱신이며 `edit-B`가 유지된다.
+   결과: 토큰이 달라 0건 갱신이며 `edit-B`가 유지된다. 서버는 `409 EXPENSE_EDIT_LOCK_INVALID`로 응답한다.
 ```
 
 ### 검증
 
 - 같은 사용자가 수정 잠금을 다시 획득한 뒤 이전 토큰으로 해제하거나 저장하면 서버는 새 작업의 잠금과 데이터를 바꾸지 않는다.
 - 만료된 수정 토큰으로 연장하면 서버는 잠금을 되살리지 않는다.
+- 두 회원이 같은 지출의 수정 잠금을 동시에 요청하면 서버는 한 회원에게만 잠금을 준다.
+- 같은 잠금을 두 번 연장하면 서버는 만료 시각을 4분 늘린다.
+- 유효한 잠금이 없을 때 해제를 요청하면 서버는 `204`로 응답한다.
 - 수정 저장 중 종속 데이터 갱신이 실패하면 서버는 지출 변경과 잠금 해제를 모두 롤백한다.
 
 ## 영수증 이미지 처리
 
-서버는 앱에서 받은 영수증 이미지를 Gemini API로 보내 지출 정보를 추출한다.
+서버는 앱에서 받은 영수증 이미지를 인식 Port로 보내고, Gemini Adapter가 Gemini API로 지출 정보를 추출한다.
+인식 엔진을 바꿔도 서버는 API, 인식 결과 모델과 오류 코드를 바꾸지 않는다. 근거: [JECT-Study/Billit-5th-Server#83](https://github.com/JECT-Study/Billit-5th-Server/pull/83)
 서버는 영수증 이미지를 메모리에서만 처리한다. 근거: [Issue #16](https://github.com/JECT-Study/Billit-5th-Docs/issues/16)
 
 ### 처리 흐름
@@ -386,25 +442,48 @@ sequenceDiagram
     participant Gemini as Gemini API
 
     App->>Server: POST /api/v1/trips/{tripId}/receipt-recognitions
-    Server->>Gemini: 영수증 이미지 전송
-    Gemini-->>Server: 추출한 지출 정보
-    Server->>Server: 민감 정보 제거
-    Server-->>App: 200 지출 정보
+    Server->>Server: 이미지 형식, 참여와 여행 확정 확인
+    Server->>Gemini: generateContent 요청
+    alt 영수증 인식 성공
+        Gemini-->>Server: 응답 스키마에 맞춘 JSON
+        Server->>Server: 금액 범위와 분배 방식 반영
+        Server-->>App: 200 인식 결과
+    else 영수증이 아님
+        Gemini-->>Server: 영수증 아님 표시
+        Server-->>App: 400 EXPENSE_NOT_RECEIPT
+    else 장애나 시간 초과
+        Server-->>App: 503 EXPENSE_RECOGNITION_UNAVAILABLE
+    end
 ```
 
 - 서버는 Gemini API를 결제를 연결한 Cloud 프로젝트의 유료 티어로만 호출한다.
+- 서버는 상태를 남기지 않는 `generateContent`를 쓰고 Interactions API를 쓰지 않는다. Interactions API는 유료 등급에서도 요청 내용을 기본 55일 저장하기 때문이다. 근거: [JECT-Study/Billit-5th-Server#82](https://github.com/JECT-Study/Billit-5th-Server/pull/82)
 - 서버는 Google 검색 그라운딩을 쓰지 않는다. 그라운딩은 요청 데이터를 30일 따로 보관하기 때문이다.
+- 서버는 응답 형식을 JSON 스키마로 지정하고, 스키마에는 인식 결과 모델의 값과 영수증 여부만 넣는다.
 - 서버는 이미지를 Gemini API에 보내기 전에 민감 정보를 가리지 않는다.
-- 서버는 Gemini 응답에서 카드번호, 카드 승인번호, 영수증 번호, 카드사와 전화번호를 빼고 앱에 반환한다.
-- 서버는 카드번호, 카드 승인번호, 영수증 번호, 카드사와 전화번호를 저장하지 않는다.
+- 서버는 응답 스키마와 인식 결과 모델에 카드번호, 카드 승인번호, 영수증 번호, 카드사, 가맹점 사업자번호, 주소와 전화번호를 담을 필드를 두지 않는다.
+- 서버는 카드번호, 카드 승인번호, 영수증 번호, 카드사, 가맹점 사업자번호, 주소와 전화번호를 저장하지 않는다.
 - 서버는 영수증 이미지를 디스크와 Object Storage에 쓰지 않는다.
 - 인식이 끝나면 서버는 원본 이미지를 버린다.
 - 서버는 웹 서버 접근 로그와 애플리케이션 로그에 요청 본문을 남기지 않는다.
+- 인식에 실패하면 서버는 로그에 실패 사유와 HTTP 상태만 남기고, 인식 원문과 Gemini 오류 본문은 남기지 않는다.
+- 서버는 Gemini API 호출을 재시도하지 않는다.
 - 서버는 동시에 처리하는 영수증 인식 요청의 수를 제한한다.
 
 수탁자와 국외 이전은 [개인정보 정책서](../policy/privacy.md#처리-위탁과-국외-이전)를, 서버 설정과 동시에 처리할 요청의 최대 수는 [운영 환경과 개인정보 보호](operations-privacy.md#영수증-인식-경로의-서버-설정)를 따른다.
 
+### 실패 처리
+
+- 이미지의 Content-Type과 파일 앞부분의 형식 표시가 JPEG, PNG, HEIC, WebP 중 같은 형식을 가리키지 않으면 서버는 Gemini API를 호출하지 않고 `415 EXPENSE_RECEIPT_UNSUPPORTED`로 거절한다.
+- Gemini API가 영수증이 아니라고 응답하면 서버는 `400 EXPENSE_NOT_RECEIPT`로 응답한다.
+- Gemini API에 2초 안에 연결하지 못하거나 20초 안에 응답을 받지 못하면 서버는 `503 EXPENSE_RECOGNITION_UNAVAILABLE`로 응답한다.
+- Gemini API가 오류를 응답하거나 해석할 수 없는 응답을 보내면 서버는 `503 EXPENSE_RECOGNITION_UNAVAILABLE`로 응답한다.
+- API 키가 없거나 인식 엔진을 끄면 서버는 Gemini API를 호출하지 않고 `503 EXPENSE_RECOGNITION_UNAVAILABLE`로 응답한다.
+- 외부 장애나 시간 초과가 생기면 서버는 빈 인식 결과로 대신 응답하지 않는다.
+
 ### 검증
 
 - 실제 영수증 이미지를 업로드하면 서버는 요청을 처리하는 동안 Tomcat 임시 디렉터리에 파일을 만들지 않는다.
-- 서버는 영수증 인식 응답에 카드번호, 카드 승인번호, 영수증 번호, 카드사와 전화번호를 담지 않는다.
+- 서버는 영수증 인식 응답에 카드번호, 카드 승인번호, 영수증 번호, 카드사, 가맹점 사업자번호, 주소와 전화번호를 담지 않는다.
+- 영수증이 아닌 이미지를 보내면 서버는 `400 EXPENSE_NOT_RECEIPT`로 응답한다.
+- Gemini API가 20초 안에 응답하지 않으면 서버는 `503 EXPENSE_RECOGNITION_UNAVAILABLE`로 응답한다.
