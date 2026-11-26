@@ -87,7 +87,7 @@ API 문서 경로(`/swagger-ui.html`, `/api-docs/**`, `/scalar/**`)는 개발 �
 
 | 위치 | 설정 |
 | --- | --- |
-| Nginx | 영수증 인식 경로(`/api/v1/trips/{tripId}/receipt-recognitions`)만 요청 본문 한도(`client_max_body_size`)와 `client_body_buffer_size`를 서버의 multipart 요청 한도와 같은 16MB로 둔다. 운영은 진입점 Nginx, 개발은 개발 게이트웨이 Nginx에 둔다. |
+| Nginx | 영수증 인식 경로(`/api/v1/trips/{tripId}/receipt-recognitions`)만 요청 본문 한도(`client_max_body_size`)와 `client_body_buffer_size`를 서버의 multipart 요청 한도와 같은 16MB로 둔다. 운영은 진입점 Nginx에, 개발은 진입점 Nginx와 개발 게이트웨이 Nginx 두 곳에 둔다. |
 | Nginx | Nginx 컨테이너의 메모리 한도(128MB)를 넘지 않도록 이 경로는 서버마다 동시에 4개까지 받는다. 넘으면 Nginx가 `503 EXPENSE_RECOGNITION_UNAVAILABLE`을 앱 오류와 같은 형식으로 응답한다. |
 | Spring | multipart의 `file-size-threshold`를 16MB로 두어 업로드 파일을 메모리로 받는다. 이미지는 15MB, 요청 전체는 16MB까지 받는다. |
 
