@@ -83,7 +83,7 @@ sequenceDiagram
 
 - 부담액 계산 결과를 확인하는 단계에서 서버는 지출을 저장하지 않는다.
 - 서버는 요청자의 여행 참여, 여행 확정 여부, 결제자와 부담자의 같은 여행 소속을 복합 FK 없이 서버에서 검증한다.
-- 서버는 저장 요청에 계산 결과를 받지 않고 최종 결제액, 참여자별 부담액과 원화 환산액을 직접 계산한다. 근거: [JECT-Study/Billit-5th-Server#77](https://github.com/JECT-Study/Billit-5th-Server/pull/77)
+- 서버는 저장 요청에 계산 결과를 받지 않고 최종 결제액, 참여자별 부담액과 원화 환산액을 직접 계산한다. 근거: [Issue #82 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/82)
 - 서버는 같은 저장 요청의 중복 반영을 [지출 생성 멱등성](#지출-생성-멱등성)으로 막는다.
 - 지출을 수정하면 서버는 생성과 같은 계산 기준을 적용한다.
 - 지출 수정 API는 `PUT`으로 수정할 수 있는 입력값 전체를 받는다.
@@ -197,7 +197,7 @@ sequenceDiagram
 - 응답을 받지 못해 같은 저장을 다시 보낼 때만 앱은 같은 키를 쓴다.
 - 서버는 본문 형식 검증, 여행과 참여 확인을 고유키 조회보다 먼저 실행한다.
 - 서버는 여행 확정 여부, 결제자와 부담자, 금액의 검증을 고유키 조회 뒤에 실행한다.
-- 서버는 같은 키의 요청을 같은 저장 요청의 재시도로 보고 처음 요청의 본문과 비교하지 않는다. 근거: [JECT-Study/Billit-5th-Server#78](https://github.com/JECT-Study/Billit-5th-Server/pull/78)
+- 서버는 같은 키의 요청을 같은 저장 요청의 재시도로 보고 처음 요청의 본문과 비교하지 않는다. 근거: [Issue #85 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/85)
 - 고유키로 찾은 지출을 같은 여행에서 같은 회원이 기록했고 삭제하지 않았으면 서버는 `201 Created`, `Location`과 그 지출의 현재 상세를 반환한다.
 - 서버는 잠금 토큰과 저장 요청의 고유키를 섞어 쓰지 않는다.
 
@@ -257,7 +257,7 @@ sequenceDiagram
 - 서버는 잠금을 해제하거나 교체할 때 소유자, 만료 시각과 토큰을 함께 바꾼다.
 - 서버는 수정을 시작할 때마다 토큰을 새로 발급한다.
 - 토큰은 인증과 권한 검증을 대체하지 않는다.
-- 서버는 잠금 칼럼만 바꾸는 획득, 연장과 해제에서 `updated_at`을 바꾸지 않는다. 근거: [JECT-Study/Billit-5th-Server#81](https://github.com/JECT-Study/Billit-5th-Server/pull/81)
+- 서버는 잠금 칼럼만 바꾸는 획득, 연장과 해제에서 `updated_at`을 바꾸지 않는다. 근거: [Issue #86 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/86)
 
 ### 처리 흐름
 
@@ -377,7 +377,7 @@ RETURNING id;
 ```
 
 해제 쿼리는 정산 점유를 조건에 넣지 않는다.
-토큰이 맞는 해제 요청을 정산 점유 때문에 거절하지 않기 위해서다. 근거: [JECT-Study/Billit-5th-Server#81](https://github.com/JECT-Study/Billit-5th-Server/pull/81)
+토큰이 맞는 해제 요청을 정산 점유 때문에 거절하지 않기 위해서다. 근거: [Issue #86 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/86)
 
 ### 트랜잭션과 동시성
 

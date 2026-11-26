@@ -53,7 +53,7 @@ API 식별자는 화면 정의서 식별자와 별개다.
 
 operationId는 백엔드 OpenAPI [`expense.yml`](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/src/main/resources/api-docs/domains/expense.yml)의 이름이다.
 
-서버가 최종 결제액, 참여자별 부담액과 원화 환산액을 계산하며, 저장 요청에는 계산 결과를 넣지 않는다. 근거: [JECT-Study/Billit-5th-Server#77](https://github.com/JECT-Study/Billit-5th-Server/pull/77)
+서버가 최종 결제액, 참여자별 부담액과 원화 환산액을 계산하며, 저장 요청에는 계산 결과를 넣지 않는다. 근거: [Issue #82 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/82)
 계산 기준은 [분배와 할인](../policy/expense.md#분배와-할인)과 [환산과 자투리](../policy/expense.md#환산과-자투리)를 따른다. 1차 MVP에서는 계산된 개인 부담액의 수기 수정을 제공하지 않는다. 직접 수정한 환율의 자동 저장은 [환율 정책](../policy/exchange-rate.md#지출-환율)을 따른다.
 
 탈퇴자의 결제 목록은 표시 이름과 금액만 제공하고 상세 품목과 개인 리시트는 노출하지 않는다.
@@ -148,7 +148,7 @@ HTTP `200 OK`를 반환한다.
 서버는 여행 기간 밖의 지출도 반환한다.
 서버는 삭제한 지출을 반환하지 않는다.
 서버는 결제 날짜가 늦은 지출부터, 결제 날짜가 같으면 지출 ID가 큰 지출부터 반환한다.
-정렬 기준은 고정이며 요청으로 바꿀 수 없다. 근거: [JECT-Study/Billit-5th-Server#80](https://github.com/JECT-Study/Billit-5th-Server/pull/80)
+정렬 기준은 고정이며 요청으로 바꿀 수 없다. 근거: [Issue #80 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/80)
 확정 전 여행에는 지출이 없으므로 서버는 빈 목록을 반환한다.
 
 ### EXP-02 지출 상세
