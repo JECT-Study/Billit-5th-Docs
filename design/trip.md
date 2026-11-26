@@ -90,10 +90,6 @@ sequenceDiagram
 - 서버는 `trip` 행 잠금을 기다리는 시간에 `lock_timeout` 상한을 둔다.
 - 같은 여행방 닉네임의 저장 요청이 동시에 오면 서버는 `UNIQUE (trip_id, trip_nickname)` 제약으로 한 건만 저장한다.
 
-> 추후 검토
->
-> 등록된 참여자 수 조회가 병목이 되면 `trip`에 등록 인원 컬럼을 두고 조건부 UPDATE로 바꾸는 방안을 검토한다.
-
 ### 실패 처리
 
 - 잠금 대기가 `lock_timeout`을 넘으면 서버는 재시도하지 않고 오류를 반환한다. 응답은 [TRIP-11 여행 확정](../api-spec/trip.md#trip-11-여행-확정)을 따른다.

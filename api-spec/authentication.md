@@ -1,4 +1,4 @@
-# 인증 API 스펙 초안 (1차 MVP)
+# 인증 API 스펙 (1차 MVP)
 
 ## 목차
 
@@ -18,7 +18,7 @@ Google, Apple, Kakao 소셜 로그인, Access Token 갱신과 현재 기기 로�
 
 [목록](README.md) | [공통 API 스펙](common.md) | [인증 정책](../policy/authentication.md) | [가입 정책](../policy/user.md#회원가입)
 
-아래 경로와 요청 필드는 검토 중인 초안이다. 합의 기록과 OpenAPI 반영 상태는 구분해 확인하며, [API 계약 관리 기준](<../guide/API 스펙 문서 가이드.md#계약-원본과-문서의-역할>)을 따른다. 소셜 제공자가 발급한 코드와 토큰, Billit이 발급하는 토큰의 차이는 [공통 인증](common.md#인증과-권한)을 따른다.
+합의 기록과 OpenAPI 반영 상태는 구분해 확인하며, [API 계약 관리 기준](<../guide/API 스펙 문서 가이드.md#계약-원본과-문서의-역할>)을 따른다. 소셜 제공자가 발급한 코드와 토큰, Billit이 발급하는 토큰의 차이는 [공통 인증](common.md#인증과-권한)을 따른다.
 
 ## API 목록
 
@@ -95,10 +95,6 @@ Apple 로그인 응답을 받지 못하면 앱은 소셜 인증을 다시 진행
 서버는 Google과 Kakao의 ID 토큰을 일회용으로 처리하지 않는다.
 로그인 응답을 받지 못한 앱이 같은 `idToken`으로 다시 요청하면 서버는 토큰이 만료되기 전까지 처음 요청과 같은 방식으로 검증하고 로그인 결과를 새로 발급한다.
 이 동작은 [Billit-5th-Server `bd8d21f`](https://github.com/JECT-Study/Billit-5th-Server/tree/bd8d21f3b0ce289cedee201ec10a3cfbc21b863b)의 코드로 확인했다.
-
-> 논의 필요
->
-> 같은 `idToken`의 재요청을 막는 `nonce` 검증이나 일회용 처리의 1차 MVP 도입 여부. 도입하면 앱과 서버를 함께 바꿔야 한다.
 
 ID 토큰의 검증 조건, 제공자별 발급 대상과 Apple 인가 코드 교환은 [소셜 로그인 설계](../design/authentication.md#소셜-로그인)를 따른다.
 가입 전용 토큰의 형식과 유효 기간은 [토큰과 로그인 세션](../design/authentication.md#토큰과-로그인-세션)과 [가입 전용 토큰 설계](../design/authentication.md#가입-전용-토큰)를 따른다.
@@ -240,7 +236,7 @@ HTTP `204 No Content`를 반환한다. 응답 본문은 없다.
 
 ## 오류 코드
 
-아래는 개별 API에 사용한 코드의 대응표다. 합의 여부와 미결인 매핑은 그 API의 상태 표시를 따르며, OpenAPI 반영 여부는 [API 계약 관리 기준](<../guide/API 스펙 문서 가이드.md#계약-원본과-문서의-역할>)에 따라 별도로 확인한다.
+아래는 개별 API에 사용한 코드의 대응표다. OpenAPI 반영 여부는 [API 계약 관리 기준](<../guide/API 스펙 문서 가이드.md#계약-원본과-문서의-역할>)에 따라 별도로 확인한다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
