@@ -35,10 +35,6 @@
 서버는 이 버킷에 파일을 만들 수만 있고, 지난 파일을 읽거나 지우거나 덮어쓰지 못한다.
 365일이 지난 파일은 버킷의 수명 주기 규칙이 지운다.
 
-운영 진입점과 개발 게이트웨이의 Nginx는 영수증 인식 경로(`/api/v1/trips/{tripId}/receipt-recognitions`)의 요청 본문을 15MB 메모리 버퍼로 받아 디스크 임시 파일을 만들지 않는다.
-Nginx 컨테이너의 메모리 한도(128MB)를 넘지 않도록 이 경로는 서버마다 동시에 4개까지 받는다.
-동시 요청이 이 수를 넘으면 Nginx가 `503 EXPENSE_RECOGNITION_UNAVAILABLE`을 앱 오류와 같은 형식으로 응답한다.
-
 ## 전송 구간 암호화와 접근 권한
 
 - 앱과 서버 사이의 HTTPS는 지금 임시 도메인 인증서를 쓰며, 실제 도메인이 정해지면 바꾼다.
@@ -87,16 +83,17 @@ API 문서 경로(`/swagger-ui.html`, `/api-docs/**`, `/scalar/**`)는 개발 �
 
 영수증 이미지의 처리 기준은 [지출 설계서의 영수증 이미지 처리](expense.md#영수증-이미지-처리)를, 수탁자와 국외 이전은 [개인정보 정책서의 처리 위탁과 국외 이전](../policy/privacy.md#처리-위탁과-국외-이전)을 따른다.
 
-지금 설정에서는 큰 이미지가 디스크 임시 파일을 거치므로, 영수증 인식 경로에서 다음 설정을 바꾼다.
+영수증 이미지가 디스크 임시 파일을 거치지 않도록 영수증 인식 경로에 다음 설정을 둔다.
 
-| 위치 | 지금 동작 | 바꿀 설정 |
-| --- | --- | --- |
-| Nginx | `client_body_buffer_size`(기본 16KB)보다 큰 요청 본문을 앱에 넘기기 전에 임시 파일(`client_body_temp`)로 쓴다. | 영수증 인식 경로만 `client_body_buffer_size`를 요청 본문 한도(`client_max_body_size`, 지금 15MB)와 같게 올린다. 운영은 진입점 Nginx 한 곳에서 바꾼다. 개발은 요청이 진입점 Nginx를 거쳐 개발 게이트웨이 Nginx로 한 번 더 넘어가므로 두 곳 모두에서 바꾼다. |
-| Spring | multipart의 `file-size-threshold`가 기본값 0이라 업로드 파일을 Tomcat 임시 디렉터리에 파일로 받는다. | `file-size-threshold`를 요청 본문 한도 이상으로 올린다. |
+| 위치 | 설정 |
+| --- | --- |
+| Nginx | 영수증 인식 경로(`/api/v1/trips/{tripId}/receipt-recognitions`)만 요청 본문 한도(`client_max_body_size`)와 `client_body_buffer_size`를 서버의 multipart 요청 한도와 같은 16MB로 둔다. 운영은 진입점 Nginx, 개발은 개발 게이트웨이 Nginx에 둔다. |
+| Nginx | Nginx 컨테이너의 메모리 한도(128MB)를 넘지 않도록 이 경로는 서버마다 동시에 4개까지 받는다. 넘으면 Nginx가 `503 EXPENSE_RECOGNITION_UNAVAILABLE`을 앱 오류와 같은 형식으로 응답한다. |
+| Spring | multipart의 `file-size-threshold`를 16MB로 두어 업로드 파일을 메모리로 받는다. 이미지는 15MB, 요청 전체는 16MB까지 받는다. |
 
-Nginx 설정은 Infra 저장소에서, Spring 설정과 확인 테스트는 영수증 인식 구현 PR에서 반영한다.
+Nginx 설정은 Infra 저장소에, Spring 설정은 서버 저장소의 환경별 설정 파일에 있다.
 
 이미지가 디스크를 거치지 않는지는 다음 두 가지로 확인한다. Spring과 Nginx 모두 요청이 끝나면 임시 파일을 지우므로, 요청이 끝난 뒤 임시 디렉터리가 비어 있는지만 봐서는 확인할 수 없다.
 
-- 영수증 인식 구현 PR에 실제 이미지를 업로드하고, 요청을 처리하는 도중에 Tomcat 임시 디렉터리에 파일이 생기지 않는지 검사하는 테스트를 둔다. 이 테스트가 기존 설정(`file-size-threshold` 0)에서는 실패하는지 먼저 확인한다.
+- 서버 테스트는 실제 이미지를 업로드하고, 요청을 처리하는 도중에 Tomcat 임시 디렉터리에 업로드 파일이 생기지 않는지 검사한다.
 - dev 배포 후 영수증 이미지를 업로드하고, 진입점 Nginx와 개발 게이트웨이 Nginx의 error log에 `a client request body is buffered to a temporary file` 경고가 없는지 Grafana에서 확인한다.
