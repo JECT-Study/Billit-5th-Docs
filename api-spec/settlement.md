@@ -1348,7 +1348,7 @@ FILTER 방식도 준비 요청 시 필터를 새로 실행해 대상을 확장�
 
 ## 오류 코드
 
-공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
+공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Billit-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |

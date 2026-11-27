@@ -15,7 +15,7 @@
 
 ## 문서 범위
 
-이 문서는 Billit의 인증, 데이터 표현, HTTP 응답과 페이지 규격을 정리한다. [백엔드 API 공통 규칙](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/develop/docs/contributing/api-conventions.md)이 기준이며, 도메인별 요청과 응답은 각 도메인 문서에서 관리한다.
+이 문서는 Billit의 인증, 데이터 표현, HTTP 응답과 페이지 규격을 정리한다. [백엔드 API 공통 규칙](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-conventions.md)이 기준이며, 도메인별 요청과 응답은 각 도메인 문서에서 관리한다.
 
 ## 공통 규격
 
