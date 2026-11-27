@@ -366,7 +366,7 @@ sequenceDiagram
     Server->>DB: 정산 행 SELECT FOR UPDATE
     Server->>Server: 상태, 권한, 토큰, 만료와 미리보기 일치 검증
     Server->>DB: settlement_expense와 transfer 저장
-    Server->>DB: IN_PROGRESS 전환과 created_at 기록
+    Server->>DB: IN_PROGRESS 또는 COMPLETED 전환과 created_at 기록
     Server->>DB: COMMIT
     Server-->>App: 정산서 결과
 ```
@@ -378,6 +378,7 @@ sequenceDiagram
 - 서버는 미리보기 결과, 대상 지출과 정산 방식을 발행 전 결과로 보존한다.
 - 서버는 미리보기와 확정에 같은 지출 입력, 환율, 정렬과 자투리 기준을 적용한다.
 - 확정할 때 서버는 사용자가 확인한 미리보기와 현재 준비의 대상 지출, 정산 방식과 결과가 같은지 검증한다.
+- 저장할 송금 관계가 0건이면 서버는 `IN_PROGRESS`를 거치지 않고 `COMPLETED`로 전환한다. 근거: [Issue #101](https://github.com/JECT-Study/Billit-5th-Docs/issues/101)
 - 확정하면 서버는 준비 만료 시각을 비운다.
 - 확정해도 서버는 지출의 `settlement_id`를 유지한다.
 
@@ -412,6 +413,7 @@ sequenceDiagram
 - 확정 중 송금 관계 저장이 실패하면 서버는 포함 지출 연결과 상태 전환도 롤백한다.
 - 같은 정산의 확정을 두 번 요청하면 서버는 송금 관계를 한 번만 저장한다.
 - 정산을 확정하면 서버는 `created_at`에 확정 시각을 기록한다.
+- 송금 관계가 0건인 정산을 확정하면 서버는 `COMPLETED`로 전환하고 `created_at`에 확정 시각을 기록한다.
 
 ## 수령 확인과 취소
 
