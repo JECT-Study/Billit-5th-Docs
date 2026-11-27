@@ -47,7 +47,7 @@ API 식별자는 화면 정의서 식별자와 별개다.
 | [수정 잠금 획득](#exp-04-수정-잠금-획득) | `POST` | `/api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock` | 지출 기록자 또는 여행 관리자 | `acquireExpenseEditLock` |
 | [수정 잠금 연장](#exp-05-수정-잠금-연장) | `PATCH` | `/api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | `extendExpenseEditLock` |
 | [수정 잠금 해제](#exp-06-수정-잠금-해제) | `DELETE` | `/api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | `releaseExpenseEditLock` |
-| [지출 수정](#exp-07-지출-수정) | `PUT` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | 없음 |
+| [지출 수정](#exp-07-지출-수정) | `PUT` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | `updateExpense` |
 | [지출 삭제](#exp-08-지출-삭제) | `DELETE` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자 | 없음 |
 | [영수증 인식](#exp-09-영수증-인식) | `POST` | `/api/v1/trips/{tripId}/receipt-recognitions` | 여행 참여자 (여행 확정 후) | `recognizeReceipt` |
 
@@ -576,7 +576,9 @@ HTTP `204 No Content`를 반환한다.
 
 #### 설명
 
-현재 잠금으로 지출을 수정하고 확정된 부담액을 저장한다. 앱은 수정 가능한 입력값 전체를 PUT으로 보내며, 서버는 요청 전체를 검증하고 지출 생성과 동일한 계산 기준을 적용한다. 생략한 필드를 기존 값으로 유지하는 PATCH 방식으로 처리하지 않는다.
+현재 잠금으로 지출을 수정하고, 서버가 다시 계산한 부담액을 함께 저장한다.
+앱은 수정 가능한 입력값 전체를 PUT으로 보내며, 서버는 요청 전체를 검증하고 지출 생성과 동일한 계산 기준을 적용한다.
+생략한 필드를 기존 값으로 유지하는 PATCH 방식으로 처리하지 않는다.
 
 #### 요청
 
@@ -591,7 +593,7 @@ HTTP `204 No Content`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `X-Lock-Token` | String | 필수 | 없음 | 현재 수정 또는 정산 준비의 잠금 토큰. |
+| `X-Lock-Token` | String | 필수 | 없음 | [EXP-04 수정 잠금 획득](#exp-04-수정-잠금-획득) 응답의 `lockToken`. UUID 형식(8-4-4-4-12자리 16진수)이며 없거나 형식이 다르면 400. |
 
 ##### Body
 
@@ -674,13 +676,17 @@ HTTP `200 OK`를 반환한다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
+| 400 | `COMMON_INVALID_REQUEST` | `X-Lock-Token`이 없거나 UUID 형식이 아님 |
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 400 | `COMMON_INVALID_REQUEST` | `splitType`에 맞지 않게 `tripMemberIds`나 `items`를 보냄 |
+| 400 | `COMMON_INVALID_REQUEST` | 최소 단위보다 작은 금액, KRW 지출의 `1.00`이 아닌 환율, 품목 금액보다 큰 상품 할인, 0 미만인 최종 결제액이나 정수부가 10자리를 넘는 원화 환산액 |
+| 400 | `EXPENSE_INVALID_SHARES` | 결제자가 참여 중인 로그인 참여자가 아니거나, 부담자가 없거나 겹치거나 참여 중인 로그인 참여자나 비로그인 참여자가 아님 |
+| 400 | `EXPENSE_AMOUNT_MISMATCH` | 품목별 지출에서 상품 할인 전 품목 금액의 합계가 `originalAmount`와 다름 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-| 409 | `EXPENSE_EDIT_LOCK_INVALID` | 현재 수정 잠금이 유효하지 않음 |
-| 409 | `EXPENSE_SETTLEMENT_LOCKED` | 지출이 정산 대상으로 잠겨 있음 |
-| 400 | `EXPENSE_AMOUNT_MISMATCH` | 수정 결과의 금액 합계가 검증 기준과 맞지 않음 |
+| 403 | `COMMON_FORBIDDEN` | 요청한 회원이 이 여행에 참여 중이 아니거나, 지출 기록자도 여행 관리자도 아님 |
+| 404 | `COMMON_NOT_FOUND` | 여행이나 지출이 없거나 삭제됐거나, 지출이 이 여행의 지출이 아님 |
+| 409 | `EXPENSE_EDIT_LOCK_INVALID` | 요청한 회원의 잠금이 아니거나, 토큰이 현재 수정 작업과 다르거나, 잠금이 없거나 만료됨 |
+| 409 | `EXPENSE_SETTLEMENT_LOCKED` | 지출이 준비 중이거나 발행된 정산에 포함돼 있음 |
 
 #### 처리 규칙
 
