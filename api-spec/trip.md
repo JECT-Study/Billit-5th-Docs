@@ -1403,7 +1403,7 @@ N은 같은 여행방의 탈퇴 회원에게 탈퇴 시각이 이른 순서대�
 | 404 | `TRIP_INVITATION_NOT_FOUND` | 초대 코드에 해당하는 여행이 없거나 삭제됨. 형식이 맞지 않는 코드도 포함 |
 | 409 | `TRIP_NICKNAME_DUPLICATED` | 여행에 참여하거나 비로그인 참여자를 등록하거나 여행방 닉네임을 수정할 때, 같은 여행의 다른 참여자가 이미 같은 여행방 닉네임을 사용 중임 |
 
-공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
+공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Billit-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
