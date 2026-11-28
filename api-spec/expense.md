@@ -688,6 +688,13 @@ HTTP `200 OK`를 반환한다.
 서버는 지출, 품목과 부담액의 변경과 잠금 해제를 한 번에 반영하며, 하나라도 실패하면 모두 취소한다.
 저장에 실패하면 서버는 기존 지출과 수정 잠금을 유지한다.
 
+서버는 기존 품목, 품목별 부담자와 참여자별 부담액을 모두 삭제하고 요청대로 다시 저장한다. 근거: [Issue #88 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/88)
+서버가 품목을 다시 저장하므로 `expenseItemId`는 수정할 때마다 바뀐다.
+
+서버는 지출 수정에 `Idempotency-Key`를 쓰지 않는다. 근거: [Issue #88 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/88)
+수정에 성공한 뒤 같은 토큰으로 다시 수정을 요청하면 서버는 잠금이 없으므로 `409 EXPENSE_EDIT_LOCK_INVALID`로 거절한다.
+수정 응답을 받지 못하면 앱은 지출 상세를 다시 조회해 수정이 반영됐는지 확인한다.
+
 ### EXP-08 지출 삭제
 
 `DELETE /api/v1/trips/{tripId}/expenses/{expenseId}`
@@ -905,7 +912,7 @@ JSON Part `request`의 필드:
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `expenseItemId` | String | 아니요 | 항상 | 지출 품목 ID. 그 지출에 속한 품목을 구분한다. |
+| `expenseItemId` | String | 아니요 | 항상 | 지출 품목 ID. 그 지출에 속한 품목을 구분한다. 지출을 수정할 때마다 바뀐다. |
 | `name` | String | 예 | 항상 | 품목명. 미입력이면 null. |
 | `amount` | String | 아니요 | 항상 | 상품 할인 전 품목 금액. 소수점 이하 2자리 문자열로 전달한다. |
 | `discountAmount` | String | 아니요 | 항상 | 그 품목 할인액. 소수점 이하 2자리 문자열로 전달한다. |
