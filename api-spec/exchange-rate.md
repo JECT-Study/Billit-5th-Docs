@@ -186,12 +186,13 @@ HTTP `201 Created`를 반환한다.
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+| 409 | `EXCHANGE_RATE_DUPLICATED` | 같은 여행에 본인이 통화, 환전 날짜, 환전 수단과 환율이 모두 같은 기록을 이미 등록함 |
 
 #### 처리 규칙
 
-서버는 지원 통화, 0보다 큰 환율과 소수점 이하 2자리 입력을 검증한다.
+서버는 통화가 `JPY`, `USD`, `EUR`, `CNY` 중 하나인지와 환율이 0보다 크고 정수부 10자리 이하인 소수점 이하 2자리 값인지 검증한다.
 서버는 기록자 ID를 직접 정한다.
-같은 여행에서 본인이 통화, 일자, 수단과 환율이 모두 같은 기록을 다시 저장하면 서버는 저장을 거절한다.
+같은 여행에서 본인이 통화, 일자, 수단과 환율이 모두 같은 기록을 다시 저장하면 서버는 `409 EXCHANGE_RATE_DUPLICATED`로 거절한다.
 날짜가 다르면 서버는 별도 기록으로 저장한다.
 
 ## 환율 조회와 선택 API
@@ -216,7 +217,7 @@ HTTP `201 Created`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `currency` | String | 필수 | 없음 | `JPY`, `USD`, `EUR`, `CNY` 중 하나. `KRW`는 거절한다. |
 | `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜를 조회 기준으로 사용. 미래 날짜는 거절. |
 
 요청 Body는 보내지 않는다.
@@ -237,7 +238,7 @@ HTTP `200 OK`를 반환한다.
   "data": {
     "currency": "JPY",
     "rate": "9.12",
-    "provider": "EXAMPLE_PROVIDER",
+    "provider": "ECB",
     "baseDate": "2026-11-05"
   }
 }
@@ -249,22 +250,25 @@ HTTP `200 OK`를 반환한다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. 미래 날짜 요청 포함 |
+| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음. `KRW`와 미래 날짜 요청 포함 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 404 | `EXCHANGE_RATE_NOT_PUBLISHED` | 결제일과 그 이전 7일 안에 고시된 환율이 없음 |
 | 503 | `EXCHANGE_RATE_PROVIDER_UNAVAILABLE` | 외부 환율을 일시적으로 조회할 수 없음 |
 
 #### 처리 규칙
 
-요청 날짜에 고시 환율이 없으면 서버는 그 날짜 이전에 고시된 값 중 가장 최근 환율을 반환한다.
+요청 날짜에 고시 환율이 없으면 서버는 그 날짜 이전 7일 안에 고시된 값 중 가장 최근 환율을 반환한다.
 서버는 `baseDate`에 요청 날짜가 아닌 실제 고시 기준일을 담는다.
 미래 날짜의 환율을 요청하면 서버는 `400`으로 거절한다.
+`KRW` 환율을 요청하면 서버는 `400`으로 거절한다. 원화 지출의 환율은 [EXP-03 지출 생성](expense.md#exp-03-지출-생성)의 규칙에 따라 `1.00`이다.
 요청한 `paidDate`와 반환된 `baseDate`가 다르면 앱은 실제 기준일과 이전 고시값을 썼다는 안내를 표시한다.
 
-요청 날짜와 그 이전에 고시된 환율이 없으면 서버는 조회 불가 오류를 반환한다.
+요청 날짜와 그 이전 7일 안에 고시된 환율이 없으면 서버는 `404 EXCHANGE_RATE_NOT_PUBLISHED`를 반환한다.
 서버는 빈 성공 응답이나 임의 환율을 반환하지 않는다.
-조회 불가 오류를 받으면 앱은 사용자가 환율을 직접 입력하게 한다.
 서버는 외부 서비스의 장애나 타임아웃을 그 날짜의 고시값이 없는 상태로 취급하지 않는다.
-외부 조회에 실패하면 서버는 직접 입력이 필요한 상태를 고시값 부재와 구분해 응답한다.
+외부 조회에 실패하면 서버는 `503 EXCHANGE_RATE_PROVIDER_UNAVAILABLE`을 반환한다.
+`404`나 `503`을 받으면 앱은 사용자가 환율을 직접 입력하게 한다.
+저장 구조와 외부 조회 순서는 [환율 설계서](../design/exchange-rate.md#결제일-기준-환율-조회)를 따른다.
 
 ## 공통 모델
 
@@ -275,8 +279,8 @@ HTTP `200 OK`를 반환한다.
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
 | `exchangeRateId` | String | 아니요 | 항상 | 본인이 등록한 개인 환율 기록 ID. |
-| `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-| `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
+| `currency` | String | 아니요 | 항상 | `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 정수부 10자리 이하인 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeMethod` | String | 아니요 | 항상 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
 | `exchangeDate` | String | 아니요 | 항상 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
 | `createdAt` | String | 아니요 | 항상 | ISO 8601 UTC. 최초 등록 시각. 최근 기록을 고르는 기준이다. |
@@ -285,8 +289,8 @@ HTTP `200 OK`를 반환한다.
 
 | 필드 | 타입 | 필수 | 기본값 | 규칙 |
 | --- | --- | --- | --- | --- |
-| `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-| `rate` | String | 필수 | 없음 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
+| `currency` | String | 필수 | 없음 | `JPY`, `USD`, `EUR`, `CNY` 중 하나. `KRW`는 거절한다. |
+| `rate` | String | 필수 | 없음 | 외화 1단위당 원화 금액, 0보다 크고 정수부 10자리 이하. 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeMethod` | String | 필수 | 없음 | `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
 | `exchangeDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 환전 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
 
@@ -294,9 +298,9 @@ HTTP `200 OK`를 반환한다.
 
 | 필드 | 타입 | nullable | 포함 조건 | 설명 |
 | --- | --- | --- | --- | --- |
-| `currency` | String | 아니요 | 항상 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
-| `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액. 소수점 이하 2자리 문자열로 전달한다. |
-| `provider` | String | 아니요 | 항상 | 실제 환율 제공 기관 식별. |
+| `currency` | String | 아니요 | 항상 | `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
+| `rate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액. 고시 기관의 환율을 소수점 셋째 자리에서 반올림한 소수점 이하 2자리 문자열로 전달한다. |
+| `provider` | String | 아니요 | 항상 | 환율을 고시한 기관. `ECB`는 유럽중앙은행이다. |
 | `baseDate` | String | 아니요 | 항상 | YYYY-MM-DD. 환율의 실제 기준일. 요청 결제일과 다를 수 있다. |
 
 ## 오류 코드
@@ -309,4 +313,6 @@ HTTP `200 OK`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
+| 404 | `EXCHANGE_RATE_NOT_PUBLISHED` | 결제일과 그 이전 7일 안에 고시된 환율이 없음 |
+| 409 | `EXCHANGE_RATE_DUPLICATED` | 같은 여행에 본인이 통화, 환전 날짜, 환전 수단과 환율이 모두 같은 기록을 이미 등록함 |
 | 503 | `EXCHANGE_RATE_PROVIDER_UNAVAILABLE` | 외부 환율을 일시적으로 조회할 수 없음 |
