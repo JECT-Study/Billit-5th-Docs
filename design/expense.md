@@ -2,7 +2,7 @@
 
 ## 개요
 
-이 설계서는 지출의 계산과 저장, 지출 생성 멱등성, 지출 수정 잠금과 영수증 이미지 처리를 다룬다.
+이 설계서는 지출의 계산과 저장, 지출 생성 멱등성, 지출 수정 잠금, 지출 삭제와 영수증 이미지 처리를 다룬다.
 정산 준비가 지출을 점유하는 처리와 두 잠금의 경합은 [정산 설계서](settlement.md#정산-준비-잠금)를, 기본 환율 조회는 [환율 설계서](exchange-rate.md)를 따른다.
 업무 규칙은 [지출 정책서](../policy/expense.md)와 [환율 정책서](../policy/exchange-rate.md)를 따른다.
 
@@ -432,6 +432,93 @@ RETURNING id;
 - 수정 저장 중 품목 저장이 실패하면 서버는 기존 지출, 품목, 품목별 부담자 연결, 최종 부담액과 수정 잠금을 그대로 둔다.
 - 품목별 지출을 전체 1/N으로 수정하면 서버는 그 지출의 `expense_item`과 `expense_item_member` 행을 모두 삭제한다.
 - 수정 저장에 성공한 뒤 같은 토큰으로 다시 저장을 요청하면 서버는 `409 EXPENSE_EDIT_LOCK_INVALID`로 거절한다.
+
+## 지출 삭제
+
+서버는 `expense.deleted_at`에 삭제 시각을 기록하는 논리 삭제로 지출을 삭제한다.
+서버는 정산 점유와 유효한 수정 잠금이 없는 지출만 조건부 UPDATE 한 번으로 삭제한다.
+삭제 권한과 삭제할 수 없는 지출은 [등록과 권한](../policy/expense.md#등록과-권한)을 따른다.
+
+### 처리 흐름
+
+다음은 지출 삭제 요청의 처리 순서다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as 앱
+    participant Server as 서버
+    participant DB as DB
+
+    App->>Server: DELETE /api/v1/trips/{tripId}/expenses/{expenseId}
+    Server->>DB: BEGIN
+    Server->>DB: 여행, 지출과 요청자의 삭제 권한 확인
+    Server->>DB: 정산 점유와 유효한 수정 잠금이 없는 조건으로 지출 삭제
+    alt 한 건 갱신
+        Server->>DB: COMMIT
+        Server-->>App: 204 No Content
+    else 0건 갱신
+        Server->>DB: 지출 다시 조회
+        Server->>DB: ROLLBACK
+        Server-->>App: 404 또는 409 오류 응답
+    end
+```
+
+- 서버는 `:now`를 앱의 입력이 아니라 서버 시각으로 구한다.
+- 서버는 삭제한 지출의 품목, 품목별 부담자 연결, 최종 부담액과 생성 고유키를 지우지 않는다.
+- 서버는 여행과 참여자의 누적 부담액을 합산할 때 삭제한 지출의 `expense_share_amount` 행을 더하지 않는다.
+- 삭제한 지출의 생성 고유키로 지출 생성을 다시 요청하면 서버는 [지출 생성 멱등성](#지출-생성-멱등성)의 실패 처리에 따라 거절한다.
+
+### 쿼리
+
+서버는 삭제 권한을 확인한 트랜잭션에서 아래 쿼리를 실행한다.
+다음 쿼리는 정산 점유가 없고 유효한 수정 잠금이 없는 지출에 삭제 시각과 수정 시각을 같은 값으로 기록한다.
+
+```sql
+-- 지출 삭제
+UPDATE expense
+SET deleted_at = :now,
+    updated_at = :now
+WHERE id = :expense_id
+  AND trip_id = :trip_id
+  AND deleted_at IS NULL
+  AND settlement_id IS NULL
+  AND (
+      edit_lock_expires_at IS NULL
+      OR edit_lock_expires_at <= :now
+  )
+RETURNING id;
+```
+
+삭제 쿼리는 수정 잠금 획득 쿼리와 같은 점유 조건을 검사한다.
+삭제 쿼리는 수정 잠금의 소유자를 조건에 넣지 않는다.
+요청한 회원의 유효한 잠금이 있어도 지출을 삭제하지 않기 위해서다. 근거: [Issue #89 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/89)
+
+### 트랜잭션과 동시성
+
+- 서버는 삭제 권한 확인, 지출 삭제와 갱신이 0건일 때의 지출 조회를 한 트랜잭션에서 실행한다.
+- 서버는 지출을 조회한 결과로 삭제 여부를 정하지 않고, 조건부 UPDATE의 결과로 정한다.
+- 서버는 커밋에 성공한 뒤에만 `204`를 반환한다.
+- 같은 지출의 수정 잠금 획득, 수정 저장이나 정산 준비와 경합하면 서버는 [수정과 정산 준비의 경합](settlement.md#수정과-정산-준비의-경합)을 따른다.
+
+### 실패 처리
+
+- 지출 삭제의 갱신이 0건이면 서버는 트랜잭션을 롤백한다.
+- 지출 삭제의 갱신이 0건이고 지출에 정산 점유가 남아 있으면 서버는 `409 EXPENSE_SETTLEMENT_LOCKED`로 거절한다.
+- 지출 삭제의 갱신이 0건이고 그 사이 지출이 삭제되었으면 서버는 `404`로 거절한다.
+- 지출 삭제의 갱신이 0건이고 다른 사유가 없으면 서버는 유효한 수정 잠금이 있다고 보고 `409 EXPENSE_EDIT_LOCKED`로 거절한다.
+
+### 검증
+
+- 기록자가 지출을 삭제하면 서버는 그 지출의 `deleted_at`과 `updated_at`에 같은 시각을 기록한다.
+- 지출을 삭제해도 서버는 그 지출의 `expense_item`, `expense_item_member`, `expense_share_amount` 행과 `idempotency_key`를 그대로 둔다.
+- 만료되지 않은 수정 잠금이 있으면 잠금을 획득한 회원이 삭제를 요청해도 서버는 `409 EXPENSE_EDIT_LOCKED`로 거절한다.
+- 수정 잠금의 만료 시각이 현재 시각과 같거나 지났으면 서버는 지출을 삭제한다.
+- 정산이 점유한 지출의 삭제를 요청하면 서버는 `409 EXPENSE_SETTLEMENT_LOCKED`로 거절한다.
+- 같은 지출에 삭제와 수정 잠금 획득이 동시에 오면 서버는 둘 중 하나만 반영한다.
+- 같은 지출의 삭제 요청이 동시에 두 번 오면 서버는 지출을 한 번만 삭제한다.
+- 같은 지출의 삭제 요청이 동시에 두 번 오면 서버는 둘 중 한 요청을 `404`로 거절한다.
+- 이미 삭제한 지출을 다시 삭제하면 서버는 처음 삭제 시각을 바꾸지 않는다.
 
 ## 영수증 이미지 처리
 
