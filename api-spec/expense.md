@@ -233,7 +233,7 @@ HTTP `200 OK`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
+| 404 | `COMMON_NOT_FOUND` | 여행이나 지출이 없거나 삭제됐거나, 지출이 이 여행의 지출이 아님 |
 
 #### 처리 규칙
 
@@ -743,13 +743,19 @@ HTTP `204 No Content`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
-| 404 | `COMMON_NOT_FOUND` | 경로에 지정한 ID에 해당하는 대상을 찾을 수 없음 |
-| 409 | `EXPENSE_EDIT_LOCKED` | 수정 잠금이 아직 유효함 |
+| 404 | `COMMON_NOT_FOUND` | 여행이 없거나 삭제됐거나, 지출이 없거나 이미 삭제됐거나 이 여행의 지출이 아님 |
+| 409 | `EXPENSE_EDIT_LOCKED` | 만료되지 않은 수정 잠금이 있음. 요청한 회원의 잠금이어도 같음 |
 | 409 | `EXPENSE_SETTLEMENT_LOCKED` | 지출이 준비 중이거나 발행된 정산에 포함돼 있음 |
 
 #### 처리 규칙
 
 수정이나 정산으로 잠긴 지출이면 서버는 삭제하지 않는다.
+요청한 회원이 획득한 수정 잠금이 유효해도 서버는 `409 EXPENSE_EDIT_LOCKED`로 거절한다. 근거: [Issue #89 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/89)
+서버는 지출 삭제에 `X-Lock-Token`을 받지 않으므로 수정 잠금의 소유자를 구분하지 않는다.
+회원이 수정 화면에서 지출을 삭제하면 앱은 삭제를 요청하기 전에 [EXP-06 수정 잠금 해제](#exp-06-수정-잠금-해제)로 수정 잠금을 해제한다.
+
+이미 삭제한 지출을 다시 삭제하면 서버는 `404 COMMON_NOT_FOUND`를 반환한다. 근거: [Issue #89 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/89)
+삭제 응답을 받지 못해 다시 보낸 요청에도 서버는 `404 COMMON_NOT_FOUND`를 반환한다.
 
 ## 영수증 인식 API
 
