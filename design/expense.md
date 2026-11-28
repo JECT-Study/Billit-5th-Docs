@@ -27,6 +27,8 @@
 | `expense.created_by_trip_member_id` | `BIGINT` | NOT NULL, FK `trip_member.id` | 기록자 |
 | `expense.exchange_rate` | `DECIMAL(24,12)` | NOT NULL | 적용 환율. 결제 통화 1단위의 원화 금액 |
 | `expense.exchange_rate_source` | `rate_source` | NOT NULL | 환율 결정 방식. `AUTO`(API 환율)와 `MANUAL`(직접 입력) |
+| `expense.exchange_rate_provider` | `VARCHAR(50)` | NULL | 자동 환율을 고시한 기관의 코드. `ECB`는 유럽중앙은행. NULL이면 직접 입력 환율 또는 원화 지출 |
+| `expense.exchange_rate_base_date` | `DATE` | NULL | 자동 환율의 실제 기준일. 결제일과 다를 수 있음. NULL이면 직접 입력 환율 또는 원화 지출 |
 | `expense.krw_amount` | `BIGINT` | NOT NULL | 최종 결제액의 원화 환산액. 1원 단위 |
 | `expense.settlement_id` | `BIGINT` | NULL, FK `settlement.id` | 지출을 점유한 정산. NULL이면 점유한 정산이 없음 |
 | `expense.deleted_at` | `TIMESTAMPTZ` | NULL | 삭제 시각. NULL이면 삭제하지 않은 지출 |
@@ -53,7 +55,7 @@
 - 품목별 지출이면 서버는 품목과 부담자 연결을 저장하고, 참여자별 합계를 `expense_share_amount`에 저장한다.
 - 서버는 결제 시각, 시간대, 현재 위치와 국가코드를 저장하지 않는다.
 - 서버는 등록 시각 `created_at`과 결제 날짜 `paid_date`를 구분해 저장한다.
-- 지출을 저장하면 서버는 적용한 환율의 출처와 기준일을 함께 보존한다([저장된 지출과 정산](../policy/exchange-rate.md#저장된-지출과-정산)).
+- 지출을 저장하면 서버는 적용한 환율의 출처와 기준일을 `exchange_rate_source`, `exchange_rate_provider`, `exchange_rate_base_date`에 함께 보존한다([저장된 지출과 정산](../policy/exchange-rate.md#저장된-지출과-정산)).
 - `expense.settlement_id`의 점유와 해제는 [정산 준비 잠금](settlement.md#정산-준비-잠금)을 따른다.
 
 ### 처리 흐름
@@ -69,6 +71,12 @@ sequenceDiagram
 
     App->>Server: POST /api/v1/trips/{tripId}/expenses
     Server->>Server: 참여, 여행 확정 여부와 소속 검증
+    opt 외화 지출이고 환율 출처가 AUTO
+        Server->>DB: 결제 통화와 결제일의 기준 환율 조회
+        alt 행 없음
+            Server-->>App: 400 오류 응답
+        end
+    end
     Server->>Server: 금액 검증과 부담액 계산
     Server->>DB: BEGIN
     Server->>DB: 지출, 품목, 부담자 연결과 최종 부담액 저장
@@ -84,8 +92,13 @@ sequenceDiagram
 - 부담액 계산 결과를 확인하는 단계에서 서버는 지출을 저장하지 않는다.
 - 서버는 요청자의 여행 참여, 여행 확정 여부, 결제자와 부담자의 같은 여행 소속을 복합 FK 없이 서버에서 검증한다.
 - 서버는 저장 요청에 계산 결과를 받지 않고 최종 결제액, 참여자별 부담액과 원화 환산액을 직접 계산한다. 근거: [Issue #82 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/82)
+- 외화 지출의 `exchangeRateSource`가 `AUTO`이면 서버는 `reference_exchange_rate`에서 고시 기관 `ECB`, 결제 통화와 `paidDate`가 같은 행을 조회한다.
+- `AUTO`이면 서버는 요청의 `exchangeRate` 대신 조회한 기준 환율을 소수점 셋째 자리에서 `HALF_UP`으로 반올림해 `expense.exchange_rate`에 저장하고 적용한다. 반올림은 [결제일 기준 환율 조회](exchange-rate.md#결제일-기준-환율-조회)의 응답 `rate`와 같다.
+- `AUTO`이면 서버는 조회한 행의 `provider`와 `base_date`를 `expense.exchange_rate_provider`와 `expense.exchange_rate_base_date`에 저장한다.
+- `exchangeRateSource`가 `MANUAL`이거나 결제 통화가 `KRW`이면 서버는 요청의 `exchangeRate`를 적용하고 `expense.exchange_rate_provider`와 `expense.exchange_rate_base_date`를 NULL로 저장한다.
+- 서버는 지출을 저장하거나 수정할 때 고시 기관 API를 호출하지 않는다.
 - 서버는 같은 저장 요청의 중복 반영을 [지출 생성 멱등성](#지출-생성-멱등성)으로 막는다.
-- 지출을 수정하면 서버는 생성과 같은 계산 기준을 적용한다.
+- 지출을 수정하면 서버는 생성과 같은 계산 기준과 환율 적용 방식을 쓴다.
 - 지출 수정 API는 `PUT`으로 수정할 수 있는 입력값 전체를 받는다.
 - 지출을 수정하면 서버는 기존 품목, 품목별 부담자 연결과 최종 부담액을 모두 삭제하고 요청대로 다시 저장한다. 근거: [Issue #88 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/88)
 - 서버가 품목을 다시 저장하므로 지출을 수정할 때마다 `expense_item.id`가 바뀐다.
@@ -136,11 +149,13 @@ sequenceDiagram
 
 - 서버는 지출, 품목, 품목별 부담자 연결과 최종 부담액을 한 트랜잭션에서 저장한다.
 - 서버는 커밋에 성공한 뒤에만 저장 결과를 반환한다.
+- 서버는 `AUTO`의 기준 환율을 지출 저장 트랜잭션을 열기 전에 조회한다.
 - 지출을 수정하면 서버는 [지출 수정 잠금](#지출-수정-잠금)을 검증한 트랜잭션에서 지출과 종속 데이터를 갱신하고 잠금을 해제한다.
 
 ### 실패 처리
 
 - 저장 중 하나라도 실패하면 서버는 같은 트랜잭션에서 저장한 지출, 품목, 부담자 연결과 부담액을 모두 롤백한다.
+- 외화 지출의 `exchangeRateSource`가 `AUTO`인데 결제 통화와 `paidDate`가 같은 기준 환율 행이 없으면 서버는 지출을 저장하지 않고 `400`으로 거절한다.
 - 입력 금액이 [분배와 할인](../policy/expense.md#분배와-할인)이나 [환산과 자투리](../policy/expense.md#환산과-자투리)의 기준을 벗어나면 서버는 지출을 저장하지 않는다. 오류 응답은 [EXP-03 지출 생성](../api-spec/expense.md#exp-03-지출-생성)을 따른다.
 
 ### 검증
@@ -150,6 +165,13 @@ sequenceDiagram
 - 10,000원을 세 명이 전체 1/N으로 나누면 서버는 `trip_member_id`가 가장 작은 참여자에게 3,334원을 저장한다.
 - 외화 지출에서 참여자별 `krw_amount`의 합계는 `expense.krw_amount`와 같다.
 - 부담액 저장이 실패하면 서버는 같은 요청의 지출과 품목도 저장하지 않는다.
+- 외화 지출을 `AUTO`로 저장하면 서버는 조회한 기준 환율과 그 행의 `provider`, `base_date`를 지출에 저장한다.
+- 요청의 `exchangeRate`가 기준 환율과 달라도 `AUTO`이면 서버는 기준 환율을 적용한다.
+- 기준 환율 행의 `rate`가 `9.0909`이면 서버는 `expense.exchange_rate`에 `9.09`를 저장한다.
+- `MANUAL` 지출이나 원화 지출을 저장하면 서버는 `exchange_rate_provider`와 `exchange_rate_base_date`를 NULL로 저장한다.
+- `AUTO`인 외화 지출의 기준 환율 행이 없으면 서버는 지출을 저장하지 않고 `400`을 반환한다.
+- 지출을 저장하는 동안 서버는 고시 기관 API를 호출하지 않는다.
+- 지출을 저장한 뒤 개인 환율을 등록하거나 삭제해도 서버는 저장한 지출의 `exchange_rate`와 부담액을 바꾸지 않는다.
 
 ## 지출 생성 멱등성
 

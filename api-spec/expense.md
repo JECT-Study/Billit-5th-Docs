@@ -356,6 +356,7 @@ HTTP `201 Created`와 생성한 지출의 주소(`/api/v1/trips/{tripId}/expense
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 400 | `COMMON_INVALID_REQUEST` | `splitType`에 맞지 않게 `tripMemberIds`나 `items`를 보냄 |
 | 400 | `COMMON_INVALID_REQUEST` | 최소 단위보다 작은 금액, KRW 지출의 `1.00`이 아닌 환율, 품목 금액보다 큰 상품 할인, 0 미만인 최종 결제액이나 정수부가 10자리를 넘는 원화 환산액 |
+| 400 | `COMMON_INVALID_REQUEST` | `exchangeRateSource`가 `AUTO`인 외화 지출에서 결제 통화와 `paidDate`의 저장된 기준 환율이 없음 |
 | 400 | `EXPENSE_INVALID_SHARES` | 결제자가 참여 중인 로그인 참여자가 아니거나, 부담자가 없거나 겹치거나 참여 중인 로그인 참여자나 비로그인 참여자가 아님 |
 | 400 | `EXPENSE_AMOUNT_MISMATCH` | 품목별 지출에서 상품 할인 전 품목 금액의 합계가 `originalAmount`와 다름 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
@@ -371,6 +372,12 @@ HTTP `201 Created`와 생성한 지출의 주소(`/api/v1/trips/{tripId}/expense
 부담자가 이 여행에 참여 중인 로그인 참여자나 비로그인 참여자가 아니면 서버는 요청을 거절한다.
 서버는 [분배와 할인](../policy/expense.md#분배와-할인)과 [환산과 자투리](../policy/expense.md#환산과-자투리)의 기준으로 최종 결제액, 참여자별 부담액과 원화 환산액을 계산하고 지출, 품목과 부담액을 한 번에 저장한다.
 하나라도 저장에 실패하면 서버는 아무것도 저장하지 않고, 저장 고유키도 성공으로 기록하지 않는다.
+
+외화 지출의 `exchangeRateSource`가 `AUTO`이면 서버는 요청의 `exchangeRate` 대신 결제 통화와 `paidDate`의 저장된 기준 환율을 적용한다.
+서버는 기준 환율을 [FX-03 결제일 기준 환율 조회](exchange-rate.md#fx-03-결제일-기준-환율-조회)의 `rate`와 같이 소수점 셋째 자리에서 반올림하고, 기준 환율의 제공 기관과 기준일을 지출의 `exchangeRateProvider`와 `exchangeRateBaseDate`로 저장한다.
+서버는 지출을 저장할 때 환율 고시 기관을 호출하지 않으므로 저장된 기준 환율이 없으면 요청을 거절한다.
+`exchangeRateSource`가 `MANUAL`이거나 결제 통화가 `KRW`이면 서버는 `exchangeRateProvider`와 `exchangeRateBaseDate`를 null로 저장한다.
+기준 환율의 저장 구조는 [지출 설계서](../design/expense.md#지출-저장)를 따른다.
 
 서버는 요청 본문의 형식, 여행과 참여 여부를 확인한 뒤 고유키를 조회한다.
 같은 회원이 같은 여행에서 같은 고유키로 다시 보낸 요청이면 서버는 여행 확정 여부와 금액을 다시 검증하지 않고 처음 만든 지출을 반환한다.
@@ -680,6 +687,7 @@ HTTP `200 OK`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 400 | `COMMON_INVALID_REQUEST` | `splitType`에 맞지 않게 `tripMemberIds`나 `items`를 보냄 |
 | 400 | `COMMON_INVALID_REQUEST` | 최소 단위보다 작은 금액, KRW 지출의 `1.00`이 아닌 환율, 품목 금액보다 큰 상품 할인, 0 미만인 최종 결제액이나 정수부가 10자리를 넘는 원화 환산액 |
+| 400 | `COMMON_INVALID_REQUEST` | `exchangeRateSource`가 `AUTO`인 외화 지출에서 결제 통화와 `paidDate`의 저장된 기준 환율이 없음 |
 | 400 | `EXPENSE_INVALID_SHARES` | 새로 지정한 결제자가 참여 중인 로그인 참여자가 아니거나, 부담자가 없거나 겹치거나 새로 지정한 부담자가 참여 중인 로그인 참여자나 비로그인 참여자가 아님 |
 | 400 | `EXPENSE_AMOUNT_MISMATCH` | 품목별 지출에서 상품 할인 전 품목 금액의 합계가 `originalAmount`와 다름 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
@@ -693,6 +701,8 @@ HTTP `200 OK`를 반환한다.
 서버는 수정 잠금이 만료되지 않았고 지출이 정산 대상으로 잠기지 않았는지 다시 확인한다.
 서버는 지출, 품목과 부담액의 변경과 잠금 해제를 한 번에 반영하며, 하나라도 실패하면 모두 취소한다.
 저장에 실패하면 서버는 기존 지출과 수정 잠금을 유지한다.
+
+서버는 `exchangeRateSource`가 `AUTO`인 외화 지출의 환율을 [EXP-03 지출 생성](#exp-03-지출-생성)과 같은 기준으로 적용한다.
 
 서버는 새로 지정한 결제자와 부담자를 [EXP-03 지출 생성](#exp-03-지출-생성)과 같은 기준으로 검증한다.
 수정 전 지출의 결제자를 결제자로, 부담자를 부담자로 다시 보내면 서버는 그 회원이 여행을 나갔거나 탈퇴했어도 거절하지 않는다.
@@ -922,8 +932,8 @@ JSON Part `request`의 필드:
 | `discountAmount` | String | 아니요 | 항상 | 전체 할인액. 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeRate` | String | 아니요 | 항상 | 외화 1단위당 원화 금액, 0보다 큼. 소수점 이하 2자리 문자열로 전달한다. |
 | `exchangeRateSource` | String | 아니요 | 항상 | `AUTO`, `MANUAL` 중 하나. AUTO는 API에서 가져온 환율, MANUAL은 개인 기록 또는 직접 입력한 환율이다. 제공 기관은 exchangeRateProvider로 구분한다. |
-| `exchangeRateProvider` | String | 예 | 항상 | API 환율의 제공 기관. 저장한 제공 기관이 없으면 null. |
-| `exchangeRateBaseDate` | String | 예 | 항상 | YYYY-MM-DD. API 환율의 실제 기준일. 저장한 기준일이 없으면 null. |
+| `exchangeRateProvider` | String | 예 | 항상 | API 환율을 고시한 기관. `ECB`는 유럽중앙은행이다. 직접 입력한 환율이거나 원화 지출이면 null. |
+| `exchangeRateBaseDate` | String | 예 | 항상 | YYYY-MM-DD. API 환율의 실제 기준일로 `paidDate`와 다를 수 있다. 직접 입력한 환율이거나 원화 지출이면 null. |
 | `amountKrw` | String | 아니요 | 항상 | 원화 환산 결제액. 1원 단위이며 소수 부분이 `.00`인 소수점 이하 2자리 문자열로 전달한다. |
 | `items` | Array&lt;[ExpenseItem](#expenseitem)&gt; | 아니요 | 항상 | 품목별 저장 내역을 `sortOrder` 오름차순으로 담음. EQUAL이면 빈 배열. |
 | `shares` | Array&lt;[Share](#share)&gt; | 아니요 | 항상 | 참여자별 최종 부담액을 여행 참여자 ID 오름차순으로 담음. 부담액 합계는 `amount`, 원화 부담액 합계는 `amountKrw`와 같음. |
@@ -959,8 +969,8 @@ JSON Part `request`의 필드:
 | `payerTripMemberId` | String | 필수 | 없음 | 실제 결제자의 여행 참여자 ID. 이 여행에 참여 중인 로그인 참여자만 지정할 수 있다. 지출 수정의 예외는 [EXP-07 지출 수정](#exp-07-지출-수정)의 처리 규칙을 따른다. |
 | `originalAmount` | String | 필수 | 없음 | 할인 전 총액. 0 이상이고 정수부 10자리 이하인 소수점 이하 2자리 문자열. 결제 통화의 최소 단위보다 작은 소수는 받지 않으며 KRW와 JPY는 소수 부분이 `.00`이어야 한다. |
 | `discountAmount` | String | 선택 | "0.00" | 전체 할인액. 형식은 `originalAmount`와 같다. null은 보낼 수 없다. |
-| `exchangeRate` | String | 필수 | 없음 | 결제 통화 1단위의 원화 금액. 0보다 크고 정수부 10자리 이하인 소수점 이하 2자리 문자열. KRW 지출은 `1.00`이어야 한다. |
-| `exchangeRateSource` | String | 필수 | 없음 | `AUTO`, `MANUAL` 중 하나. |
+| `exchangeRate` | String | 필수 | 없음 | 결제 통화 1단위의 원화 금액. 0보다 크고 정수부 10자리 이하인 소수점 이하 2자리 문자열. KRW 지출은 `1.00`이어야 한다. `exchangeRateSource`가 `AUTO`인 외화 지출이면 서버는 이 값을 적용하지 않는다. |
+| `exchangeRateSource` | String | 필수 | 없음 | `AUTO`, `MANUAL` 중 하나. 외화 지출이 `AUTO`이면 서버가 결제 통화와 `paidDate`의 저장된 기준 환율을 적용하고, 그 기준 환율이 없으면 400으로 거절한다. |
 | `tripMemberIds` | Array&lt;String&gt; | 조건부 | 없음 | splitType=EQUAL이면 필수이며 1명 이상이고 겹칠 수 없다. 이 여행에 참여 중인 로그인 참여자나 비로그인 참여자만 지정할 수 있다. 지출 수정의 예외는 [EXP-07 지출 수정](#exp-07-지출-수정)의 처리 규칙을 따른다. BY_ITEM이면 보낼 수 없고, 보내면 400. |
 | `items` | Array&lt;[ExpenseItemInput](#expenseiteminput)&gt; | 조건부 | 없음 | splitType=BY_ITEM이면 필수이며 1개 이상. 보낸 순서대로 표시 순서를 매긴다. EQUAL이면 보낼 수 없고, 보내면 400. |
 
