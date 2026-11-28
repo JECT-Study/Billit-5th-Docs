@@ -48,7 +48,7 @@ API 식별자는 화면 정의서 식별자와 별개다.
 | [수정 잠금 연장](#exp-05-수정-잠금-연장) | `PATCH` | `/api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | `extendExpenseEditLock` |
 | [수정 잠금 해제](#exp-06-수정-잠금-해제) | `DELETE` | `/api/v1/trips/{tripId}/expenses/{expenseId}/edit-lock` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | `releaseExpenseEditLock` |
 | [지출 수정](#exp-07-지출-수정) | `PUT` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자, 본인의 수정 잠금 필요 | `updateExpense` |
-| [지출 삭제](#exp-08-지출-삭제) | `DELETE` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자 | 없음 |
+| [지출 삭제](#exp-08-지출-삭제) | `DELETE` | `/api/v1/trips/{tripId}/expenses/{expenseId}` | 지출 기록자 또는 여행 관리자 | `deleteExpense` |
 | [영수증 인식](#exp-09-영수증-인식) | `POST` | `/api/v1/trips/{tripId}/receipt-recognitions` | 여행 참여자 (여행 확정 후) | `recognizeReceipt` |
 
 operationId는 백엔드 OpenAPI [`expense.yml`](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/src/main/resources/api-docs/domains/expense.yml)의 이름이다.
@@ -712,11 +712,12 @@ HTTP `200 OK`를 반환한다.
 
 #### 인증
 
-그 여행방에 접근할 수 있는 로그인 회원 중 이 지출을 기록한 회원 또는 여행 관리자만 요청할 수 있다. 결제자라는 이유만으로 수정 권한을 주지는 않는다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
+그 여행방에 접근할 수 있는 로그인 회원 중 이 지출을 기록한 회원 또는 여행 관리자만 요청할 수 있다. 결제자라는 이유만으로 삭제 권한을 주지는 않는다. Access Token 전달 방식은 [공통 인증](common.md#인증과-권한)을 따른다.
 
 #### 설명
 
-삭제 가능한 지출을 삭제한다.
+지출을 삭제한다.
+서버는 삭제한 지출을 [EXP-01 지출 목록](#exp-01-지출-목록)과 [EXP-02 지출 상세](#exp-02-지출-상세)에서 반환하지 않는다.
 
 #### 요청
 
@@ -740,9 +741,9 @@ HTTP `204 No Content`를 반환한다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |
-| 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
+| 400 | `COMMON_INVALID_REQUEST` | `tripId`나 `expenseId`가 숫자 ID 형식이 아님 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
-| 403 | `COMMON_FORBIDDEN` | 로그인했지만 요청 대상에 대한 조회 또는 변경 권한이 없음 |
+| 403 | `COMMON_FORBIDDEN` | 요청한 회원이 이 여행에 참여 중이 아니거나, 지출 기록자도 여행 관리자도 아님 |
 | 404 | `COMMON_NOT_FOUND` | 여행이 없거나 삭제됐거나, 지출이 없거나 이미 삭제됐거나 이 여행의 지출이 아님 |
 | 409 | `EXPENSE_EDIT_LOCKED` | 만료되지 않은 수정 잠금이 있음. 요청한 회원의 잠금이어도 같음 |
 | 409 | `EXPENSE_SETTLEMENT_LOCKED` | 지출이 준비 중이거나 발행된 정산에 포함돼 있음 |
@@ -756,6 +757,8 @@ HTTP `204 No Content`를 반환한다.
 
 이미 삭제한 지출을 다시 삭제하면 서버는 `404 COMMON_NOT_FOUND`를 반환한다. 근거: [Issue #89 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/89)
 삭제 응답을 받지 못해 다시 보낸 요청에도 서버는 `404 COMMON_NOT_FOUND`를 반환한다.
+
+삭제한 지출의 생성 고유키로 지출 생성을 다시 요청하면 서버는 [EXP-03 지출 생성](#exp-03-지출-생성)의 `409 EXPENSE_IDEMPOTENCY_KEY_REUSED`로 거절한다.
 
 ## 영수증 인식 API
 
