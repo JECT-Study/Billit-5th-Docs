@@ -680,7 +680,7 @@ HTTP `200 OK`를 반환한다.
 | 400 | `COMMON_INVALID_REQUEST` | 필수값이 없거나 형식 또는 값의 범위가 올바르지 않음 |
 | 400 | `COMMON_INVALID_REQUEST` | `splitType`에 맞지 않게 `tripMemberIds`나 `items`를 보냄 |
 | 400 | `COMMON_INVALID_REQUEST` | 최소 단위보다 작은 금액, KRW 지출의 `1.00`이 아닌 환율, 품목 금액보다 큰 상품 할인, 0 미만인 최종 결제액이나 정수부가 10자리를 넘는 원화 환산액 |
-| 400 | `EXPENSE_INVALID_SHARES` | 결제자가 참여 중인 로그인 참여자가 아니거나, 부담자가 없거나 겹치거나 참여 중인 로그인 참여자나 비로그인 참여자가 아님 |
+| 400 | `EXPENSE_INVALID_SHARES` | 새로 지정한 결제자가 참여 중인 로그인 참여자가 아니거나, 부담자가 없거나 겹치거나 새로 지정한 부담자가 참여 중인 로그인 참여자나 비로그인 참여자가 아님 |
 | 400 | `EXPENSE_AMOUNT_MISMATCH` | 품목별 지출에서 상품 할인 전 품목 금액의 합계가 `originalAmount`와 다름 |
 | 401 | `COMMON_UNAUTHORIZED` | Access Token이 없거나 만료되었거나 올바르지 않음 |
 | 403 | `COMMON_FORBIDDEN` | 요청한 회원이 이 여행에 참여 중이 아니거나, 지출 기록자도 여행 관리자도 아님 |
@@ -693,6 +693,11 @@ HTTP `200 OK`를 반환한다.
 서버는 수정 잠금이 만료되지 않았고 지출이 정산 대상으로 잠기지 않았는지 다시 확인한다.
 서버는 지출, 품목과 부담액의 변경과 잠금 해제를 한 번에 반영하며, 하나라도 실패하면 모두 취소한다.
 저장에 실패하면 서버는 기존 지출과 수정 잠금을 유지한다.
+
+서버는 새로 지정한 결제자와 부담자를 [EXP-03 지출 생성](#exp-03-지출-생성)과 같은 기준으로 검증한다.
+수정 전 지출의 결제자를 결제자로, 부담자를 부담자로 다시 보내면 서버는 그 회원이 여행을 나갔거나 탈퇴했어도 거절하지 않는다.
+품목별 지출이면 서버는 수정 전 지출의 부담자를 어느 품목의 부담자로 보내도 거절하지 않는다.
+결제자와 부담자의 수정 기준은 [수정과 잠금](../policy/expense.md#수정과-잠금)을 따른다.
 
 서버는 기존 품목, 품목별 부담자와 참여자별 부담액을 모두 삭제하고 요청대로 다시 저장한다. 근거: [Issue #88 논의 결과](https://github.com/JECT-Study/Billit-5th-Docs/issues/88)
 서버가 품목을 다시 저장하므로 `expenseItemId`는 수정할 때마다 바뀐다.
@@ -942,12 +947,12 @@ JSON Part `request`의 필드:
 | `currency` | String | 필수 | 없음 | `KRW`, `JPY`, `USD`, `EUR`, `CNY` 중 하나. |
 | `paidDate` | String | 필수 | 없음 | YYYY-MM-DD. 사용자가 입력한 현지 결제 날짜. 시각은 수집하지 않으며 UTC 변환 없음. |
 | `paymentMethod` | String | 필수 | 없음 | `CARD`는 일반 카드, `CASH`는 현금, `TRAVEL_CARD`는 트래블 카드다. |
-| `payerTripMemberId` | String | 필수 | 없음 | 실제 결제자의 여행 참여자 ID. 이 여행에 참여 중인 로그인 참여자만 지정할 수 있다. |
+| `payerTripMemberId` | String | 필수 | 없음 | 실제 결제자의 여행 참여자 ID. 이 여행에 참여 중인 로그인 참여자만 지정할 수 있다. 지출 수정의 예외는 [EXP-07 지출 수정](#exp-07-지출-수정)의 처리 규칙을 따른다. |
 | `originalAmount` | String | 필수 | 없음 | 할인 전 총액. 0 이상이고 정수부 10자리 이하인 소수점 이하 2자리 문자열. 결제 통화의 최소 단위보다 작은 소수는 받지 않으며 KRW와 JPY는 소수 부분이 `.00`이어야 한다. |
 | `discountAmount` | String | 선택 | "0.00" | 전체 할인액. 형식은 `originalAmount`와 같다. null은 보낼 수 없다. |
 | `exchangeRate` | String | 필수 | 없음 | 결제 통화 1단위의 원화 금액. 0보다 크고 정수부 10자리 이하인 소수점 이하 2자리 문자열. KRW 지출은 `1.00`이어야 한다. |
 | `exchangeRateSource` | String | 필수 | 없음 | `AUTO`, `MANUAL` 중 하나. |
-| `tripMemberIds` | Array&lt;String&gt; | 조건부 | 없음 | splitType=EQUAL이면 필수이며 1명 이상이고 겹칠 수 없다. 이 여행에 참여 중인 로그인 참여자나 비로그인 참여자만 지정할 수 있다. BY_ITEM이면 보낼 수 없고, 보내면 400. |
+| `tripMemberIds` | Array&lt;String&gt; | 조건부 | 없음 | splitType=EQUAL이면 필수이며 1명 이상이고 겹칠 수 없다. 이 여행에 참여 중인 로그인 참여자나 비로그인 참여자만 지정할 수 있다. 지출 수정의 예외는 [EXP-07 지출 수정](#exp-07-지출-수정)의 처리 규칙을 따른다. BY_ITEM이면 보낼 수 없고, 보내면 400. |
 | `items` | Array&lt;[ExpenseItemInput](#expenseiteminput)&gt; | 조건부 | 없음 | splitType=BY_ITEM이면 필수이며 1개 이상. 보낸 순서대로 표시 순서를 매긴다. EQUAL이면 보낼 수 없고, 보내면 400. |
 
 ### ExpenseItemInput
@@ -957,7 +962,7 @@ JSON Part `request`의 필드:
 | `name` | String | 선택 | 없음 | 품목명. 1~50자이며 공백이 아닌 문자를 하나 이상 포함한다. 생략하거나 null이면 이름 없는 품목이다. |
 | `amount` | String | 필수 | 없음 | 상품 할인 전 품목 금액. 형식은 [ExpenseInput](#expenseinput)의 `originalAmount`와 같다. |
 | `discountAmount` | String | 필수 | 없음 | 이 품목에만 적용하는 상품 할인액. 형식은 `amount`와 같고 `amount`보다 클 수 없다. |
-| `tripMemberIds` | Array&lt;String&gt; | 필수 | 없음 | 품목 부담자의 여행 참여자 ID. 1명 이상이고 겹칠 수 없으며, 이 여행에 참여 중인 로그인 참여자나 비로그인 참여자만 지정할 수 있다. |
+| `tripMemberIds` | Array&lt;String&gt; | 필수 | 없음 | 품목 부담자의 여행 참여자 ID. 1명 이상이고 겹칠 수 없으며, 이 여행에 참여 중인 로그인 참여자나 비로그인 참여자만 지정할 수 있다. 지출 수정의 예외는 [EXP-07 지출 수정](#exp-07-지출-수정)의 처리 규칙을 따른다. |
 
 ### EditLock
 
@@ -993,7 +998,7 @@ JSON Part `request`의 필드:
 
 ## 오류 코드
 
-공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
+공통 코드 이름은 [백엔드 CommonErrorCode](https://github.com/JECT-Study/Billit-5th-Server/blob/09dd7bfbaf37974fecfa3bb2fa2c22ea3378d20c/src/main/kotlin/com/ject/global/error/CommonErrorCode.kt)와 맞췄다.
 
 | HTTP | 코드 | 조건 |
 | --- | --- | --- |

@@ -4,11 +4,11 @@
 
 이 가이드는 `api-spec/`의 Markdown 문서에 요청과 응답 계약, 검토안을 작성하는 기준이다. 근거와 상태, 설명 흐름은 [공통 문서 작성 가이드](<공통 문서 작성 가이드.md>)를, 문장은 [한국어 표현 가이드](<한국어 표현 가이드.md>)를 따른다.
 
-HTTP 상태, 공통 응답, 인증과 데이터 표현은 [Billit API 공통 규칙](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/develop/docs/contributing/api-conventions.md)을 따른다. [공통 API 스펙](../api-spec/common.md)은 이 기준을 문서에서 참조하기 위한 설명이다. 서로 충돌하면 차이와 영향 범위를 확인하고, 임의로 새로운 규칙을 선택하지 않는다.
+HTTP 상태, 공통 응답, 인증과 데이터 표현은 [Billit API 공통 규칙](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-conventions.md)을 따른다. [공통 API 스펙](../api-spec/common.md)은 이 기준을 문서에서 참조하기 위한 설명이다. 서로 충돌하면 차이와 영향 범위를 확인하고, 임의로 새로운 규칙을 선택하지 않는다.
 
 ## 계약 원본과 문서의 역할
 
-확정된 실행 가능한 계약의 원본은 백엔드의 OpenAPI YAML이다. 관리와 구현 동기화는 [백엔드 API 문서 기준](https://github.com/JECT-Study/Trip-Sheet-5th-Server/blob/develop/docs/contributing/api-documentation.md)을 따른다.
+확정된 실행 가능한 계약의 원본은 백엔드의 OpenAPI YAML이다. 관리와 구현 동기화는 [백엔드 API 문서 기준](https://github.com/JECT-Study/Billit-5th-Server/blob/develop/docs/contributing/api-documentation.md)을 따른다.
 
 - Markdown에는 API 범위, 검토할 계약과 클라이언트가 이해해야 하는 설명을 작성한다. 확정된 내용은 대응하는 OpenAPI 경로나 `operationId`를 연결한다.
 - 정책이 확정돼도 경로, 필드와 오류 매핑까지 확정된 것은 아니다. 정하지 않은 선택은 본문에 상태를 표시하지 않고 [미결정 사항](<공통 문서 작성 가이드.md#미결정-사항>)에 따라 논의 Issue로 관리한다.
