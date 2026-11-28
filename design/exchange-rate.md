@@ -96,8 +96,9 @@ sequenceDiagram
 
 `:requester_trip_member_id`는 인증된 요청자의 여행 참여 정보에서 구한다.
 `:payment_currency`는 회원이 지출에 선택한 결제 통화다.
-쿼리는 등록 시각인 `created_at`만 정렬 기준으로 쓴다.
+쿼리는 등록 시각인 `created_at`을 정렬 기준으로 쓰고, 같으면 `id`로 정렬한다.
 환전 날짜 `exchange_date`는 순서에 영향을 주지 않는다.
+[FX-01 내 환율 목록](../api-spec/exchange-rate.md#fx-01-내-환율-목록)은 같은 정렬로 기록을 페이지 단위로 반환한다.
 
 다음 쿼리는 요청자가 같은 여행에서 결제 통화로 등록한 개인 저장 환율 중 등록 시각이 가장 늦은 기록 하나를 조회한다.
 
@@ -108,7 +109,7 @@ FROM manual_exchange_rate
 WHERE trip_id = :trip_id
   AND created_by_trip_member_id = :requester_trip_member_id
   AND currency = :payment_currency
-ORDER BY created_at DESC
+ORDER BY created_at DESC, id DESC
 LIMIT 1;
 ```
 
@@ -208,6 +209,7 @@ ON CONFLICT (provider, currency, rate_date) DO NOTHING;
 - 같은 여행의 다른 참여자만 결제 통화의 기록을 등록했으면 조회 쿼리는 행을 반환하지 않는다.
 - 결제 통화의 기록이 여러 개면 조회 쿼리는 `created_at`이 가장 늦은 기록을 반환한다.
 - 가장 최근 기록을 삭제하면 조회 쿼리는 남은 기록 중 `created_at`이 가장 늦은 기록을 반환한다.
+- `created_at`이 같은 기록이 있으면 조회 쿼리는 `id`가 큰 기록을 반환한다.
 - 개인 저장 환율을 삭제해도 서버는 기존 지출의 `exchange_rate`를 바꾸지 않는다.
 - 같은 여행에서 본인이 통화, 환전 날짜, 환전 수단과 환율이 같은 기록을 동시에 두 번 등록하면 서버는 한 건만 저장하고 다른 요청을 `409`로 거절한다.
 - 환전 날짜만 다른 기록을 등록하면 서버는 별개 기록으로 저장한다.
